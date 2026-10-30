@@ -1,0 +1,51 @@
+{
+  "manifest_version": 2,
+  "name": "Ad Swap for Twitch",
+  "version": "2.2.0",
+  "description": "Keep watching during Twitch ads: mutes the ad and enlarges the small live-stream preview Twitch shows, with sound. Optional tidy-ups for the Twitch page.",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.twitch.tv/*",
+        "https://m.twitch.tv/*"
+      ],
+      "js": [
+        "defaults.js",
+        "content.js",
+        "cleanup.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "twitch-ad-swap-7f3c2a@extensions",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
+  "browser_action": {
+    "default_title": "Ad Swap for Twitch",
+    "default_popup": "popup.html",
+    "default_icon": "icon.svg"
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "options_ui": {
+    "page": "popup.html",
+    "open_in_tab": false
+  }
+}

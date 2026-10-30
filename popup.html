@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --fg: #1f1f23; --muted: #6b6b76; --bg: #fff; --line: #e6e6ea; --accent: #9146ff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg: #efeff1; --muted: #a0a0ab; --bg: #1f1f23; --line: #35353b; --accent: #a970ff; }
+  }
+  body { font: 13px/1.35 system-ui, sans-serif; margin: 0; padding: 12px 14px; width: 300px; color: var(--fg); background: var(--bg); }
+  body.page { width: auto; max-width: 520px; padding: 20px; }
+  h1 { font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  h1 img { width: 20px; height: 20px; }
+  h2 small { text-transform: none; letter-spacing: 0; font-weight: normal; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; padding-top: 10px; border-top: 1px solid var(--line); }
+  label { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: start; padding: 5px 0; cursor: pointer; }
+  input { margin: 2px 0 0; accent-color: var(--accent); }
+  small { grid-column: 2; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1><img src="icon.svg" alt="">Ad Swap for Twitch</h1>
+
+  <h2>Ads</h2>
+  <label><input type="checkbox" id="enabled"><span>Swap to the stream during ads</span>
+    <small>Mutes the ad and plays the corner stream's sound</small></label>
+  <label><input type="checkbox" id="enlarge"><span>Enlarge the stream over the ad</span>
+    <small>Turn off to keep only the sound swap</small></label>
+  <label><input type="checkbox" id="breakScreen"><span>Break screen when there's no preview</span>
+    <small>Covers the ad with a short break message instead</small></label>
+
+  <h2>Left sidebar</h2>
+  <label><input type="checkbox" id="hideSidebar"><span>Hide the whole sidebar</span></label>
+  <label><input type="checkbox" id="hideLiveChannels"><span>Hide "Live Channels"</span>
+    <small>Also called "Recommended Channels". Works when Twitch is in English</small></label>
+  <label><input type="checkbox" id="sidebarFollowedOnly"><span>Show only "Followed Channels"</span>
+    <small>Hides every other section in the sidebar</small></label>
+
+  <h2>Hide on the page</h2>
+  <label><input type="checkbox" id="hideAlsoWatch"><span>"Viewers Also Watch"</span>
+    <small>Works when Twitch is in English</small></label>
+  <label><input type="checkbox" id="hideBrowse"><span>Browse button</span></label>
+  <label><input type="checkbox" id="hideTopIcons"><span>Top-bar icons</span>
+    <small>Keeps notifications and your profile</small></label>
+
+  <h2>Following <small>(when logged in)</small></h2>
+  <label><input type="checkbox" id="logoToFollowing"><span>Twitch logo opens Following</span></label>
+  <label><input type="checkbox" id="startOnFollowing"><span>Open Following instead of the home page</span></label>
+
+  <h2>Troubleshooting</h2>
+  <label><input type="checkbox" id="debug"><span>Debug logging</span>
+    <small>Writes what the extension sees to the console (Ctrl+Shift+K)</small></label>
+
+  <script src="defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
