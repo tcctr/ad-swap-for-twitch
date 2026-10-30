@@ -34,3 +34,10 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   if something stops working, Twitch probably changed its markup. Turn on Debug logging.
 - Fullscreen during a real ad was never confirmed.
 - "Viewers Also Watch" and "Live Channels" are found by their English names.
+
+## Status (end of the first cloud session)
+- Live on addons.mozilla.org: 2.0.1. Built but possibly not yet uploaded: 2.1.0 and 2.2.0
+  (this repository is at 2.2.0). Check the Developer Hub for the latest uploaded version.
+- 2.1.0 added the break screen, the smoother end of ad, and faster ad detection.
+  2.2.0 split the sidebar options (whole sidebar / Live Channels / Followed only).
+- Both were tested on stand-in pages only; check them on real Twitch.
