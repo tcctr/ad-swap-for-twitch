@@ -40,7 +40,6 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 ## Known gaps
 - Twitch's page markup was matched from best guesses and confirmed by hand-testing in Zen;
   if something stops working, Twitch probably changed its markup. Turn on Debug logging.
-- Fullscreen during a real ad was never confirmed.
 - "Viewers Also Watch" outside the sidebar is found by its English name, and so are
   Followed/Live Channels in the collapsed sidebar if the expanded one wasn't seen first.
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
