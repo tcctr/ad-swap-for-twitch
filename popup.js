@@ -5,7 +5,7 @@ const defaults = TAS_DEFAULTS;
 const isPopup = api.extension.getViews({ type: "popup" }).includes(window);
 if (!isPopup) document.body.classList.add("page");
 
-api.storage.sync.get(defaults).then((s) => {
+TAS_MIGRATE(api.storage.sync).catch(() => {}).then(() => api.storage.sync.get(defaults)).then((s) => {
   for (const key of Object.keys(defaults)) {
     const box = document.getElementById(key);
     box.checked = s[key];

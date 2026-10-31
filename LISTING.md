@@ -19,8 +19,8 @@ When an ad break starts on Twitch, Twitch often keeps the live stream playing in
 Ads still play, and channels still get credit for them. Ad Swap doesn't block or skip anything; it just lets you keep following the stream while they run.
 
 Optional page tweaks (all off by default, switch them on in the extension's menu):
-• Hide the left sidebar, just its "Live Channels" section, or everything but your Followed Channels
-• Hide "Viewers Also Watch" (when Twitch is in English)
+• Hide the whole left sidebar, or each part of it on its own: Followed Channels, Live Channels (Recommended Channels), Viewers Also Watch, the "Show More" buttons and the collapse arrow
+• Hide "Viewers Also Watch" elsewhere on the page (when Twitch is in English)
 • Hide the Browse button
 • Hide top-bar icons, keeping notifications and your profile
 • Make the Twitch logo open your Following page
@@ -35,11 +35,11 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
-## Version notes for 2.1.0
-New: when an ad plays without a stream preview, a break screen covers the ad (can be switched off). New option to keep the sidebar but show only Followed Channels. Smoother hand-back when the ad ends: no black gap, and the stream's sound returns sooner.
-
-## Version notes for 2.2.0
-The left sidebar options are now separate: hide the whole sidebar, hide only the "Live Channels" section, or show only "Followed Channels".
+## Version notes for 2.2.0 (everything since 2.0.1)
+• New break screen: when an ad plays and Twitch shows no stream preview, a calm break screen with the ad countdown covers the ad. You can switch it off in the menu.
+• Smoother end of ads: the stream stays up until the main video is playing again, so there's no black gap, and its sound comes back sooner.
+• Faster switching when an ad starts: ads are detected sooner, so the stream takes over more quickly.
+• Left sidebar: hide each part on its own (Followed Channels, Live Channels, Viewers Also Watch, the "Show More" buttons, the collapse arrow), or the whole sidebar. Sections are recognised in any language in the expanded sidebar. If you had "Viewers Also Watch" switched on, the new sidebar option is switched on for you.
 
 ## Category
 Photos, Music & Videos
@@ -54,10 +54,14 @@ MIT License
 Not needed: the extension collects no data (declared in the manifest).
 
 ## Notes to reviewer
-No build step: the uploaded files are the source. The extension only runs on twitch.tv. It watches the Twitch player for ad breaks, mutes the ad video, unmutes Twitch's own small live preview and restyles it to cover the player, then restores everything when the ad ends. The optional tweaks hide page elements with CSS and redirect the home page and logo to /directory/following for logged-in users. No network requests, no remote code, and only the "storage" permission.
+No build step and no minified or generated code: the uploaded files are the source. The extension only runs on twitch.tv and m.twitch.tv. It watches the Twitch player for ad breaks, mutes the ad video, unmutes Twitch's own small live preview and restyles it to cover the player, then restores everything when the ad ends. When there is no preview, it covers the ad with a static "break" overlay built with DOM methods (no innerHTML from page data). The optional tweaks tag page elements with data attributes and hide them with a CSS rule keyed on a class on <html>; they also redirect the home page and logo to /directory/following for logged-in users. A one-time settings migration copies one stored option to a new key in storage.sync. No network requests, no remote code, no data collection, and only the "storage" permission.
+
+Changes since the last approved version (2.0.1): the break screen, a smoother hand-back at the end of ads, faster ad detection, and separate options for each part of the left sidebar.
+
+To test: open any live channel on twitch.tv and wait for an ad break. The sidebar options can be checked on any channel page from the toolbar menu; they apply instantly.
 
 ## Screenshots to take (1280×800 works well)
 1. During an ad break: the enlarged stream covering the player.
 2. The same moment without the extension, showing the small preview in the corner (for comparison).
 3. The settings menu (`screenshot-menu.png` in this folder).
-4. A channel page with the page tweaks switched on.
+4. A channel page with the page tweaks switched on (for example Live Channels and the Browse button hidden).
