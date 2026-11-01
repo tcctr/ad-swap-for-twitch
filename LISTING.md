@@ -35,7 +35,10 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
-## Version notes for 2.2.0 (everything since 2.0.1)
+## Version notes for 2.2.1
+Fixes the break screen covering the stream during ads: when Twitch showed its small stream preview, the break screen could appear instead and stay on after the ad ended. The preview is used again whenever Twitch shows one, the break screen only appears when there is none, and the stream comes back when the ad ends.
+
+## Version notes for 2.2.0 (published 2026-10-31; everything since 2.0.1)
 • New break screen: when an ad plays and Twitch shows no stream preview, a calm break screen with the ad countdown covers the ad. You can switch it off in the menu.
 • Smoother end of ads: the stream stays up until the main video is playing again, so there's no black gap, and its sound comes back sooner.
 • Faster switching when an ad starts: ads are detected sooner, so the stream takes over more quickly.
@@ -56,7 +59,7 @@ Not needed: the extension collects no data (declared in the manifest).
 ## Notes to reviewer
 No build step and no minified or generated code: the uploaded files are the source. The extension only runs on twitch.tv and m.twitch.tv. It watches the Twitch player for ad breaks, mutes the ad video, unmutes Twitch's own small live preview and restyles it to cover the player, then restores everything when the ad ends. When there is no preview, it covers the ad with a static "break" overlay built with DOM methods (no innerHTML from page data). The optional tweaks tag page elements with data attributes and hide them with a CSS rule keyed on a class on <html>; they also redirect the home page and logo to /directory/following for logged-in users. A one-time settings migration copies one stored option to a new key in storage.sync. No network requests, no remote code, no data collection, and only the "storage" permission.
 
-Changes since the last approved version (2.0.1): the break screen, a smoother hand-back at the end of ads, faster ad detection, and separate options for each part of the left sidebar.
+Bug-fix release; only content.js changed since 2.2.0. Twitch's ad label now only counts while it is visible (a hidden copy left in the page kept the extension in "ad" mode); the stream preview is picked from videos that are actually playing and re-checked when it stops, instead of locking in the first small video; and the enlarged preview is layered above the break screen.
 
 To test: open any live channel on twitch.tv and wait for an ad break. The sidebar options can be checked on any channel page from the toolbar menu; they apply instantly.
 

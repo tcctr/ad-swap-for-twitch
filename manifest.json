@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Ad Swap for Twitch",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Keep watching during Twitch ads: mutes the ad and enlarges the small live-stream preview Twitch shows, with sound. Optional tidy-ups for the Twitch page.",
   "permissions": [
     "storage"

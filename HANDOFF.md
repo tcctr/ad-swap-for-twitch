@@ -46,9 +46,12 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
 
 ## Status (2026-10-31)
-- Live on addons.mozilla.org: 2.0.1. 2.1.0 was never uploaded, and neither was 2.2.0 until now.
-  The next upload is 2.2.0 and its version notes in `LISTING.md` cover everything since 2.0.1.
-- 2.2.0 now includes:
+- Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without
+  the ad fix below). 2.1.0 was never uploaded. 2.2.1, the ad fix, was submitted 2026-11-01
+  and is awaiting review.
+- Uploads can be done with `web-ext sign --channel=listed --amo-metadata <json>` using AMO API
+  credentials kept outside this repo; check existing versions on AMO first.
+- 2.2.0 includes:
   - the break screen;
   - the smoother end of ads;
   - faster ad detection;
@@ -61,7 +64,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   - expanded and collapsed sidebar;
   - English and German.
   Not yet checked: logged in (Followed Channels), and inside Firefox/Zen itself.
-- Fixed (2026-11-01) after hand-testing on real Twitch: the break screen showed even when there
+- Fixed in 2.2.1 (2026-11-01) after hand-testing on real Twitch: the break screen showed even when there
   was a preview and stayed after the ad. Causes: hidden "Ad" labels left in the page counted as
   an ad; a preview element reused by the next ad stayed blocked; the first small video was locked
   in as the preview even if it wasn't playing. Now only visible labels count, the preview is
