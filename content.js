@@ -23,12 +23,17 @@
   let previewLostAt = 0;       // when the preview stopped playing, or the ad started
   let lastMain = { el: null, time: 0 };
   let enlargeBlocked = false;  // preview's container looked unsafe to resize
-  let retiredPreview = null;   // preview from an ad that already ended
+  let retiredPreview = null;   // preview from an ad that already ended, while it keeps playing
 
   const log = (...a) => settings.debug && console.log("[Ad Swap]", ...a);
 
+  // Twitch can leave these in the page, hidden, after the ad; only visible ones count.
+  function visible(el) {
+    return el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+  }
+
   function adShowing() {
-    return AD_SELECTORS.some((s) => document.querySelector(s));
+    return AD_SELECTORS.some((s) => [...document.querySelectorAll(s)].some(visible));
   }
 
   function area(v) {
@@ -36,26 +41,42 @@
     return r.width * r.height;
   }
 
+  function playing(v) {
+    return v.isConnected && !v.paused && !v.ended && v.readyState >= 2;
+  }
+
   // Returns { main, pbyp } among the page's <video> elements.
   function findVideos() {
     const videos = [...document.querySelectorAll("video")]
       .filter((v) => v === pbypVideo || v.closest(PBYP_HINT) || area(v) > 0);
-    if (pbypVideo && !videos.includes(pbypVideo)) pbypVideo = null;
-    if (!pbypVideo && videos.length >= 2) {
-      // Prefer a video inside a "picture-by-picture" container, else the smallest one.
-      pbypVideo = videos.find((v) => v.closest(PBYP_HINT)) ||
-                  [...videos].sort((a, b) => area(a) - area(b))[0];
-      log("found stream preview", pbypVideo);
+    // A finished ad's preview may keep playing for a moment; forget it once it stops.
+    if (retiredPreview && !playing(retiredPreview)) retiredPreview = null;
+    // Keep the chosen preview while it plays (enlarged, it's the biggest video);
+    // otherwise look again, so a wrong or stale pick never sticks.
+    if (pbypVideo && !(videos.includes(pbypVideo) && playing(pbypVideo))) {
+      if (pbypVideo.isConnected) pbypVideo.muted = true; // silent if Twitch resumes it later
+      pbypVideo = null;
     }
-    const others = videos.filter((v) => v !== pbypVideo);
-    const main = others.sort((a, b) => area(b) - area(a))[0] || null;
+    // The main player is the biggest video that isn't the preview or one we enlarged.
+    const main = videos.filter((v) => v !== pbypVideo && !styled.has(v) && !v.closest(PBYP_HINT))
+      .sort((a, b) => area(b) - area(a))[0] ||
+      videos.filter((v) => v !== pbypVideo).sort((a, b) => area(b) - area(a))[0] || null;
+    if (!pbypVideo && main) {
+      // Prefer a playing video inside a "picture-by-picture" container, else the smallest playing one.
+      const candidates = videos.filter((v) => v !== main && v !== retiredPreview && playing(v));
+      const found = candidates.find((v) => v.closest(PBYP_HINT)) ||
+                    candidates.sort((a, b) => area(a) - area(b))[0];
+      if (found) {
+        pbypVideo = found;
+        log("found stream preview", describe(found));
+      }
+    }
     return { main, pbyp: pbypVideo };
   }
 
   // The preview is only worth showing while it's actually playing.
   function previewUsable(pbyp) {
-    return !!pbyp && pbyp.isConnected && !pbyp.paused && !pbyp.ended &&
-           pbyp.readyState >= 2 && pbyp !== retiredPreview;
+    return !!pbyp && playing(pbyp) && pbyp !== retiredPreview;
   }
 
   // Is the main player showing moving picture (rather than loading or black)?
@@ -161,7 +182,7 @@
       "max-height": "none",
       margin: "0",
       transform: "none",
-      "z-index": "2147483000",
+      "z-index": "2147483001", // above the break screen, so a playing preview always wins
       background: "#000",
       border: "none",
       "border-radius": "0",
@@ -219,7 +240,7 @@
     const [title, line, tip, count] = breakEl.children;
     Object.assign(breakEl.style, {
       position: "fixed", left: `${t.left + breakOffset.x}px`, top: `${t.top + breakOffset.y}px`,
-      width: `${t.width}px`, height: `${t.height}px`, zIndex: "2147483001",
+      width: `${t.width}px`, height: `${t.height}px`, zIndex: "2147483000",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       gap: `${size * 0.6}px`, padding: "24px", boxSizing: "border-box", textAlign: "center",
       background: "#18181b", color: "#efeff1", font: `${size}px/1.35 system-ui, sans-serif`,
@@ -297,8 +318,9 @@
       if (inAd) endAd();
       return;
     }
-    const { main, pbyp } = findVideos();
     const label = adShowing();
+    if (label) retiredPreview = null; // a new ad: any playing preview belongs to it
+    const { main, pbyp } = findVideos();
     const usable = previewUsable(pbyp);
     const now = Date.now();
 

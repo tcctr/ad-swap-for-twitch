@@ -61,6 +61,12 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   - expanded and collapsed sidebar;
   - English and German.
   Not yet checked: logged in (Followed Channels), and inside Firefox/Zen itself.
-- The ad swap itself (2.1.0 changes) was tested on stand-in pages only; check it on real Twitch.
+- Fixed (2026-11-01) after hand-testing on real Twitch: the break screen showed even when there
+  was a preview and stayed after the ad. Causes: hidden "Ad" labels left in the page counted as
+  an ad; a preview element reused by the next ad stayed blocked; the first small video was locked
+  in as the preview even if it wasn't playing. Now only visible labels count, the preview is
+  re-picked from playing videos, and the enlarged preview sits above the break screen.
+  Checked on a stand-in player only (Twitch serves no ads to headless browsers); confirm on real
+  ad breaks.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
