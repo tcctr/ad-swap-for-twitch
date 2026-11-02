@@ -63,7 +63,9 @@
       videos.filter((v) => v !== pbypVideo).sort((a, b) => area(b) - area(a))[0] || null;
     if (!pbypVideo && main) {
       // Prefer a playing video inside a "picture-by-picture" container, else the smallest playing one.
-      const candidates = videos.filter((v) => v !== main && v !== retiredPreview && playing(v));
+      // Twitch's preview sits inside the player; other videos on the page (chat, sidebar) don't count.
+      const candidates = videos.filter((v) => v !== main && v !== retiredPreview && playing(v) &&
+                                              (v.closest(PBYP_HINT) || insidePlayer(v, main)));
       const found = candidates.find((v) => v.closest(PBYP_HINT)) ||
                     candidates.sort((a, b) => area(a) - area(b))[0];
       if (found) {
@@ -72,6 +74,14 @@
       }
     }
     return { main, pbyp: pbypVideo };
+  }
+
+  // Is the video's centre within the main player's area?
+  function insidePlayer(v, main) {
+    const r = v.getBoundingClientRect();
+    const t = targetRect(main);
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    return x >= t.left && x <= t.right && y >= t.top && y <= t.bottom;
   }
 
   // The preview is only worth showing while it's actually playing.
@@ -326,7 +336,10 @@
 
     if (!inAd) {
       // The corner preview only plays during ads.
-      if ((label || usable) && main) startAd(main);
+      if ((label || usable) && main) {
+        log(label ? "ad label showing" : "stream preview playing without an ad label", describe(pbyp));
+        startAd(main);
+      }
       else return;
     }
 

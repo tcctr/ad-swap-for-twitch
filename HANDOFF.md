@@ -71,5 +71,9 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   re-picked from playing videos, and the enlarged preview sits above the break screen.
   Checked on a stand-in player only (Twitch serves no ads to headless browsers); confirm on real
   ad breaks.
+- Fixed in 2.2.2 (2026-11-02): the swap started without an ad (seen on a subscribed channel)
+  because any small playing video on the page counted as the preview. The preview must now sit
+  inside the player or a "picture-by-picture" container. Confirmed by hand-testing in Zen.
+  Debug logging now says why an ad started. Packaged, not yet uploaded.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
