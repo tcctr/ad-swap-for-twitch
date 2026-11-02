@@ -29,7 +29,7 @@ Optional page tweaks (all off by default, switch them on in the extension's menu
 Good to know:
 • The stream can only be swapped in when Twitch shows its small preview. Twitch doesn't show it for every ad, for example usually not for the ads before a stream starts.
 • The preview is lower quality than the main stream.
-• Twitch changes its site often. If something stops working, please leave a note in the support section.
+• Twitch changes its site often. If something stops working, please mention it in a review on this page.
 
 Ad Swap collects no data and talks to no servers. Settings are stored in your browser and synced through Firefox Sync if you use it.
 
