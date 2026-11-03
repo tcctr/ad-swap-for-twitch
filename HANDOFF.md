@@ -31,7 +31,15 @@ No build step: these files are the source and get zipped as-is for upload.
 2. Zip only the extension files:
    `zip -r ad-swap-for-twitch-X.Y.Z.zip manifest.json defaults.js content.js cleanup.js popup.html popup.js icon.svg icons`
 3. Check it: `npx web-ext lint --source-dir ad-swap-for-twitch-X.Y.Z.zip`
-4. Upload on addons.mozilla.org: Ad Swap for Twitch, Upload New Version. Answer "No" to source code.
+4. Add the version notes to `LISTING.md`, and save them as AMO metadata JSON outside the repo:
+   `{"version": {"release_notes": {"en-US": "..."}}}`
+5. Upload with the AMO API. The keys are in `../amo-credentials.sh` (the folder above this repo,
+   never committed):
+   `source ../amo-credentials.sh && npx web-ext sign --channel=listed --amo-metadata <json> --ignore-files HANDOFF.md LISTING.md README.md LICENSE '*.zip' screenshot-menu.png`
+   The signed copy lands in `web-ext-artifacts/`. Check AMO for existing versions first: a version
+   number can't be reused. Fallback: Upload New Version on the Developer Hub, answer "No" to
+   source code.
+6. Update the status notes below.
 
 ## Testing locally
 `npx web-ext run` in this folder starts Firefox with the extension loaded, or use
@@ -49,8 +57,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without
   the ad fix below). 2.1.0 was never uploaded. 2.2.1, the ad fix, was submitted 2026-11-01
   and is awaiting review.
-- Uploads can be done with `web-ext sign --channel=listed --amo-metadata <json>` using AMO API
-  credentials kept outside this repo; check existing versions on AMO first.
+- Uploads: see "Releasing an update" above.
 - 2.2.0 includes:
   - the break screen;
   - the smoother end of ads;
