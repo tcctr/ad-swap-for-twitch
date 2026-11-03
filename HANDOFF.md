@@ -75,6 +75,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   subscribed channel) by only counting a preview inside the player or a "picture-by-picture"
   container. It did not fix that and broke the swap in fullscreen, so the `content.js` change was
   reverted on 2026-11-03 and released as 2.2.3 (same `content.js` as 2.2.1). The no-ad swap is
-  still open. 2.2.3 is packaged, not yet uploaded.
+  still open. 2.2.3 was uploaded with `web-ext sign` on 2026-11-03 and
+  approved and signed straight away.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
