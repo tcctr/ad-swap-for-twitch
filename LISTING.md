@@ -35,6 +35,9 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.2.3
+Fixes the stream preview not taking over the screen during ads in fullscreen, which broke in 2.2.2. This undoes the 2.2.2 change.
+
 ## Version notes for 2.2.2
 Fixes the stream preview swap kicking in when no ad was playing, for example on channels you're subscribed to. Only Twitch's own preview inside the player now counts, so other videos on the page no longer trigger it.
 

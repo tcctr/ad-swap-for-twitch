@@ -74,7 +74,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 - 2.2.2 (submitted to AMO 2026-11-02) tried to stop the swap starting without an ad (seen on a
   subscribed channel) by only counting a preview inside the player or a "picture-by-picture"
   container. It did not fix that and broke the swap in fullscreen, so the `content.js` change was
-  reverted on 2026-11-03. The no-ad swap is still open. A fixed build needs version 2.2.3 or
-  higher, since AMO already has 2.2.2.
+  reverted on 2026-11-03 and released as 2.2.3 (same `content.js` as 2.2.1). The no-ad swap is
+  still open. 2.2.3 is packaged, not yet uploaded.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
