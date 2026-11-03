@@ -71,9 +71,10 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   re-picked from playing videos, and the enlarged preview sits above the break screen.
   Checked on a stand-in player only (Twitch serves no ads to headless browsers); confirm on real
   ad breaks.
-- Fixed in 2.2.2 (2026-11-02): the swap started without an ad (seen on a subscribed channel)
-  because any small playing video on the page counted as the preview. The preview must now sit
-  inside the player or a "picture-by-picture" container. Confirmed by hand-testing in Zen.
-  Debug logging now says why an ad started. Submitted to AMO 2026-11-02 (awaiting review).
+- 2.2.2 (submitted to AMO 2026-11-02) tried to stop the swap starting without an ad (seen on a
+  subscribed channel) by only counting a preview inside the player or a "picture-by-picture"
+  container. It did not fix that and broke the swap in fullscreen, so the `content.js` change was
+  reverted on 2026-11-03. The no-ad swap is still open. A fixed build needs version 2.2.3 or
+  higher, since AMO already has 2.2.2.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
