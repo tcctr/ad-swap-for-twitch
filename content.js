@@ -19,8 +19,6 @@
   let sawAdLabel = false;      // did Twitch's "Ad" label show during this ad?
   let overSince = 0;           // when the ad first looked over (0 = it doesn't)
   let audioOnMain = false;     // stream sound handed back to the main player
-  let wasUsable = false;       // was the preview playing at the last check?
-  let previewLostAt = 0;       // when the preview stopped playing, or the ad started
   let lastMain = { el: null, time: 0 };
   let enlargeBlocked = false;  // preview's container looked unsafe to resize
   let retiredPreview = null;   // preview from an ad that already ended, while it keeps playing
@@ -284,8 +282,6 @@
     sawAdLabel = false;
     overSince = 0;
     audioOnMain = false;
-    wasUsable = false;
-    previewLostAt = Date.now();
     enlargeBlocked = false;
     mainVideo = main;
     saved = { volume: main.volume, muted: main.muted };
@@ -341,9 +337,6 @@
       mainVideo = main;
       main.addEventListener("volumechange", onMainVolumeChange);
     }
-    if (wasUsable && !usable) previewLostAt = now;
-    wasUsable = usable;
-
     // Keep the preview up until the stream is actually moving again, so there's no black gap.
     const progressing = mainVideo ? mainProgressing(mainVideo) : false;
     const showPreview = usable && !(ending && progressing);
@@ -360,8 +353,9 @@
     if (showPreview && settings.enlarge && mainVideo) enlarge(mainVideo, pbyp);
     else restoreStyles();
 
-    // No preview to show: cover the ad with a break screen (after a moment, in case it's just loading).
-    if (!over && !usable && settings.breakScreen && mainVideo && now - previewLostAt >= 1000) showBreak(mainVideo);
+    // No preview to show: cover the ad with a break screen right away. If a preview starts
+    // a moment later, it sits above the break screen, so it still wins.
+    if (!over && !usable && settings.breakScreen && mainVideo) showBreak(mainVideo);
     else hideBreak();
   }
 
@@ -389,8 +383,12 @@
     const fs = document.fullscreenElement;
     const videos = [...document.querySelectorAll("video")].map((v) => {
       const r = v.getBoundingClientRect();
+      const q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null;
       return `${Math.round(r.width)}x${Math.round(r.height)} muted=${v.muted} vol=${v.volume.toFixed(2)}` +
-             ` inFullscreen=${fs ? fs.contains(v) : "n/a"}`;
+             ` inFullscreen=${fs ? fs.contains(v) : "n/a"}` +
+             (v === pbypVideo ? " (preview)" : "") +
+             ` t=${v.currentTime.toFixed(2)} buffered=${v.buffered.length ? (v.buffered.end(v.buffered.length - 1) - v.currentTime).toFixed(2) : 0}s` +
+             (q ? ` frames=${q.totalVideoFrames} dropped=${q.droppedVideoFrames}` : "");
     });
     log({ inAd, adLabel: adShowing(), sawAdLabel, fullscreen: describe(fs), videos,
           styled: [...styled.keys()].slice(0, 1).map(describe) });

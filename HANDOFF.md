@@ -53,7 +53,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
 
-## Status (2026-10-31)
+## Status (2026-11-07)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without
   the ad fix below). 2.1.0 was never uploaded. 2.2.1, the ad fix, was submitted 2026-11-01
   and is awaiting review.
@@ -84,5 +84,10 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   reverted on 2026-11-03 and released as 2.2.3 (same `content.js` as 2.2.1). The no-ad swap is
   still open. 2.2.3 was uploaded with `web-ext sign` on 2026-11-03 and
   approved and signed straight away.
+- 2.2.4 (uploaded with `web-ext sign` on 2026-11-07, approved and signed straight away):
+  the break screen shows as soon as an ad is detected (the 1 s wait for a preview is gone;
+  a late preview still sits above it). Debug logging adds time, buffer and dropped frames per
+  video, to look into the stream sound running ahead of the picture with an enlarged preview
+  (reported by the user, cause unknown). Not yet tested on real ad breaks.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.

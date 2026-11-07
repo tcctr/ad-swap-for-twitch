@@ -35,6 +35,9 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.2.4
+The break screen now covers the ad as soon as it starts when there's no stream preview, instead of after a short delay. Debug logging now also reports playback details for each video.
+
 ## Version notes for 2.2.3
 Fixes the stream preview not taking over the screen during ads in fullscreen, which broke in 2.2.2. This undoes the 2.2.2 change.
 
