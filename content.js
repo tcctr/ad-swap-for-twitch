@@ -47,6 +47,9 @@
   function findVideos() {
     const videos = [...document.querySelectorAll("video")]
       .filter((v) => v === pbypVideo || v.closest(PBYP_HINT) || area(v) > 0);
+    // In fullscreen only what's inside the fullscreen element is on screen.
+    const fs = document.fullscreenElement;
+    const onScreen = (v) => !fs || fs.contains(v);
     // A finished ad's preview may keep playing for a moment; forget it once it stops.
     if (retiredPreview && !playing(retiredPreview)) retiredPreview = null;
     // Keep the chosen preview while it plays (enlarged, it's the biggest video);
@@ -59,9 +62,23 @@
     const main = videos.filter((v) => v !== pbypVideo && !styled.has(v) && !v.closest(PBYP_HINT))
       .sort((a, b) => area(b) - area(a))[0] ||
       videos.filter((v) => v !== pbypVideo).sort((a, b) => area(b) - area(a))[0] || null;
+    // Twitch may start another copy of the preview for fullscreen. Sound and picture must come
+    // from the copy on screen, or they drift apart; switch to it if ours is off screen.
+    if (pbypVideo && main && !onScreen(pbypVideo)) {
+      const shown = videos.find((v) => v !== main && v !== pbypVideo && v !== retiredPreview &&
+                                       onScreen(v) && playing(v));
+      if (shown) {
+        pbypVideo.muted = true;
+        restoreStyles(); // the new copy gets enlarged on this check instead
+        log("switching to the preview on screen", describe(shown));
+        pbypVideo = shown;
+      }
+    }
     if (!pbypVideo && main) {
-      // Prefer a playing video inside a "picture-by-picture" container, else the smallest playing one.
-      const candidates = videos.filter((v) => v !== main && v !== retiredPreview && playing(v));
+      // Prefer a playing video on screen inside a "picture-by-picture" container, else the smallest playing one.
+      const playingOnes = videos.filter((v) => v !== main && v !== retiredPreview && playing(v));
+      const shown = playingOnes.filter(onScreen);
+      const candidates = shown.length ? shown : playingOnes;
       const found = candidates.find((v) => v.closest(PBYP_HINT)) ||
                     candidates.sort((a, b) => area(a) - area(b))[0];
       if (found) {
@@ -72,9 +89,21 @@
     return { main, pbyp: pbypVideo };
   }
 
-  // The preview is only worth showing while it's actually playing.
+  // Twitch can keep a preview playing in a box it has collapsed to nothing (e.g. 340x0), so it
+  // only counts while Twitch gives the video and its box a real size, or once we've enlarged it.
+  function shownByTwitch(pbyp) {
+    // In fullscreen nothing outside the fullscreen element is drawn, even if we enlarge it.
+    const fs = document.fullscreenElement;
+    if (fs && !fs.contains(pbyp)) return false;
+    if (styled.has(pbyp)) return true;
+    const box = pbyp.closest(PBYP_HINT);
+    const sized = (el) => { const r = el.getBoundingClientRect(); return r.width > 1 && r.height > 1; };
+    return sized(pbyp) && (!box || sized(box));
+  }
+
+  // The preview is only worth showing while it's actually playing and on screen.
   function previewUsable(pbyp) {
-    return !!pbyp && playing(pbyp) && pbyp !== retiredPreview;
+    return !!pbyp && playing(pbyp) && pbyp !== retiredPreview && shownByTwitch(pbyp);
   }
 
   // Is the main player showing moving picture (rather than loading or black)?
@@ -264,7 +293,10 @@
   // Sound: from the preview while it plays, back to the stream as the ad ends.
   function audioToPreview(pbyp) {
     audioOnMain = false;
-    if (mainVideo && !mainVideo.muted) mainVideo.muted = true;
+    // Only the preview being shown makes sound: the ad and any other copy stay muted.
+    for (const v of document.querySelectorAll("video")) {
+      if (v !== pbyp && !v.muted) v.muted = true;
+    }
     if (pbyp.muted !== saved.muted) pbyp.muted = saved.muted;
     if (Math.abs(pbyp.volume - saved.volume) > 0.001) pbyp.volume = saved.volume;
   }
@@ -286,7 +318,7 @@
     mainVideo = main;
     saved = { volume: main.volume, muted: main.muted };
     main.addEventListener("volumechange", onMainVolumeChange);
-    log("ad started, saved", saved);
+    log("ad started, saved", saved, adShowing() ? "(Ad label)" : "(preview playing)");
   }
 
   function endAd() {
@@ -369,11 +401,20 @@
   setInterval(tick, 250);
   // Also react to page changes (an ad starting or ending) without waiting for the next check.
   let tickQueued = false;
-  new MutationObserver(() => {
+  const queueTick = () => {
     if (tickQueued) return;
     tickQueued = true;
-    setTimeout(() => { tickQueued = false; tick(); }, 50);
-  }).observe(document, { childList: true, subtree: true });
+    setTimeout(() => { tickQueued = false; tick(); }, 20);
+  };
+  // Twitch can reveal an "Ad" label that's already in the page by changing its class or style,
+  // so watch those too, skipping the changes this extension makes itself.
+  const ours = (n) => styled.has(n) || (breakEl && breakEl.contains(n));
+  new MutationObserver((records) => {
+    if (records.some((r) => r.type === "childList" || !ours(r.target))) queueTick();
+  }).observe(document, { childList: true, subtree: true, attributes: true,
+                         attributeFilter: ["class", "style", "hidden"] });
+  // A video starting or switching source is often the first sign of an ad.
+  for (const e of ["play", "playing", "loadeddata", "emptied"]) document.addEventListener(e, queueTick, true);
   document.addEventListener("fullscreenchange", () => setTimeout(tick, 50));
   console.debug("[Ad Swap] loaded");
 

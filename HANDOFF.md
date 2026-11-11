@@ -53,7 +53,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
 
-## Status (2026-11-07)
+## Status (2026-11-11)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without
   the ad fix below). 2.1.0 was never uploaded. 2.2.1, the ad fix, was submitted 2026-11-01
   and is awaiting review.
@@ -89,5 +89,14 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   a late preview still sits above it). Debug logging adds time, buffer and dropped frames per
   video, to look into the stream sound running ahead of the picture with an enlarged preview
   (reported by the user, cause unknown). Not yet tested on real ad breaks.
+- 2.2.5 (uploaded with `web-ext sign` on 2026-11-11, approved and signed straight away):
+  in fullscreen the sound comes from the preview copy on screen and every other video is muted;
+  ads are detected sooner (class/style changes and video events also trigger a check); a preview
+  only counts if Twitch shows it with a real size and, in fullscreen, inside the fullscreen
+  element. That fixes an ad playing uncovered in fullscreen with no preview: a debug log showed
+  Twitch keeping a collapsed `picture-by-picture-player` (340x0) playing, which suppressed the
+  break screen. May also fix the swap starting on subscribed channels (not confirmed).
+  Not yet tested on real ad breaks. The preview running ~4 s ahead of the stream is the gap
+  between Twitch's two feeds; the extension never moves playback time.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
