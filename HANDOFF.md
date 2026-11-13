@@ -104,7 +104,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   break screen. May also fix the swap starting on subscribed channels (not confirmed).
   Not yet tested on real ad breaks. The preview running ~4 s ahead of the stream is the gap
   between Twitch's two feeds; the extension never moves playback time.
-- 2.2.6 (not uploaded yet, 2026-11-13): with no preview the ad still showed for about a
+- 2.2.6 (uploaded with `web-ext sign` on 2026-11-13, approved and signed straight away): with no preview the ad still showed for about a
   second before the break screen, because the on-page "Ad" label appears after the ad does.
   New `background.js` reads the stream playlists, where Twitch marks stitched ads before the
   player shows them, so the ad is muted and covered from its first frame. Side effect: the
