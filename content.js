@@ -22,6 +22,10 @@
   let lastMain = { el: null, time: 0 };
   let enlargeBlocked = false;  // preview's container looked unsafe to resize
   let retiredPreview = null;   // preview from an ad that already ended, while it keeps playing
+  const playlists = new Map(); // stream playlist -> { ad, at }: is its live edge an ad (from background.js)
+  let hintStart = 0;           // when a playlist first showed an ad at its live edge
+  let hintUntil = 0;           // keep the playlist's ad signal until then
+  let lastEndAt = 0;           // when the last ad ended
 
   const log = (...a) => settings.debug && console.log("[Ad Swap]", ...a);
 
@@ -32,6 +36,27 @@
 
   function adShowing() {
     return AD_SELECTORS.some((s) => [...document.querySelectorAll(s)].some(visible));
+  }
+
+  // The playlist says an ad is coming or playing. It ends a few seconds after the live edge
+  // goes back to the stream, since the player is that far behind. A hint from before the
+  // last ad ended is stale (old ad segments), so it can't start a new one.
+  function onPlaylist({ key, ad }) {
+    const now = Date.now();
+    for (const [k, p] of playlists) if (now - p.at > 6000) playlists.delete(k); // gone, e.g. other channel
+    const before = [...playlists.values()].some((p) => p.ad);
+    playlists.set(key, { ad, at: now });
+    if (!ad) return;
+    if (!before) hintStart = now;
+    const v = mainVideo || findVideos().main;
+    const ahead = v && v.buffered.length ? Math.max(0, v.buffered.end(v.buffered.length - 1) - v.currentTime) : 0;
+    hintUntil = now + 3000 + Math.min(ahead, 10) * 1000;
+    log("ad in the stream's playlist", { ahead: ahead.toFixed(2) });
+    queueTick();
+  }
+
+  function adHint() {
+    return Date.now() < hintUntil && hintStart > lastEndAt;
   }
 
   function area(v) {
@@ -318,11 +343,12 @@
     mainVideo = main;
     saved = { volume: main.volume, muted: main.muted };
     main.addEventListener("volumechange", onMainVolumeChange);
-    log("ad started, saved", saved, adShowing() ? "(Ad label)" : "(preview playing)");
+    log("ad started, saved", saved, adShowing() ? "(Ad label)" : adHint() ? "(playlist)" : "(preview playing)");
   }
 
   function endAd() {
     inAd = false;
+    lastEndAt = Date.now();
     restoreStyles();
     hideBreak();
     const { main } = findVideos();
@@ -347,20 +373,21 @@
       return;
     }
     const label = adShowing();
-    if (label) retiredPreview = null; // a new ad: any playing preview belongs to it
+    const hint = adHint();
+    if (label || hint) retiredPreview = null; // a new ad: any playing preview belongs to it
     const { main, pbyp } = findVideos();
     const usable = previewUsable(pbyp);
     const now = Date.now();
 
     if (!inAd) {
       // The corner preview only plays during ads.
-      if ((label || usable) && main) startAd(main);
+      if ((label || hint || usable) && main) startAd(main);
       else return;
     }
 
     if (label) sawAdLabel = true;
-    // Trust the "Ad" label if we saw it; otherwise go by the preview stopping.
-    const over = sawAdLabel ? !label : !usable;
+    // Trust the "Ad" label if we saw it; otherwise go by the playlist and the preview stopping.
+    const over = sawAdLabel ? !label : !usable && !hint;
     overSince = over ? overSince || now : 0;
     const ending = overSince && now - overSince >= 400;
 
@@ -398,6 +425,10 @@
     if (!settings.breakScreen) hideBreak();
   });
 
+  api.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.type === "playlist" && settings.enabled) onPlaylist(msg);
+  });
+
   setInterval(tick, 250);
   // Also react to page changes (an ad starting or ending) without waiting for the next check.
   let tickQueued = false;
@@ -431,7 +462,7 @@
              ` t=${v.currentTime.toFixed(2)} buffered=${v.buffered.length ? (v.buffered.end(v.buffered.length - 1) - v.currentTime).toFixed(2) : 0}s` +
              (q ? ` frames=${q.totalVideoFrames} dropped=${q.droppedVideoFrames}` : "");
     });
-    log({ inAd, adLabel: adShowing(), sawAdLabel, fullscreen: describe(fs), videos,
+    log({ inAd, adLabel: adShowing(), sawAdLabel, playlistAd: adHint(), fullscreen: describe(fs), videos,
           styled: [...styled.keys()].slice(0, 1).map(describe) });
   }, 2000);
 })();

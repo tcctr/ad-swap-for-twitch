@@ -4,7 +4,8 @@ Firefox/Zen extension (Manifest V2), published on addons.mozilla.org as "Ad Swap
 No build step: these files are the source and get zipped as-is for upload.
 
 ## Files
-- `manifest.json`: version, permissions (storage only), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
+- `manifest.json`: version, permissions (storage, plus webRequest/webRequestBlocking on
+  `*.hls.ttvnw.net` to read the stream playlists), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
   Minimum Firefox 140 (142 on Android) because of `data_collection_permissions`.
 - `defaults.js`: default settings shared by everything. Only the ad features are on by default.
 - `content.js`: the ad swap. Detects ads (Twitch's "Ad" label, or the corner preview playing),
@@ -12,6 +13,11 @@ No build step: these files are the source and get zipped as-is for upload.
   (position: fixed to the player's rect, with offset correction for transformed ancestors),
   shows a break screen when there is no preview, and hands back to the stream at the end
   without a black gap (keeps the preview up until the main video is moving again, max 4 s).
+- `background.js`: reads each Twitch media playlist (`*.hls.ttvnw.net/*.m3u8`) as it passes,
+  unchanged, and tells the tab whether its newest segment is an ad (playlist mentions
+  `stitched` and the last `#EXTINF` isn't titled `live`). This arrives before the ad is on
+  screen; `content.js` treats it as an ad start, so the break screen covers the first frame.
+  A playlist signal from before the last ad ended is ignored (old ad segments stay listed).
 - `cleanup.js`: optional page tweaks (sidebar options, "Viewers Also Watch", Browse button,
   top-bar icons, Following redirects for logged-in users). Each left-sidebar part has its own
   "Hide" setting. Sections are tagged `data-tas-side="followed|live|also-watch"` by the kind of
@@ -29,7 +35,7 @@ No build step: these files are the source and get zipped as-is for upload.
 ## Releasing an update
 1. Bump `version` in `manifest.json`.
 2. Zip only the extension files:
-   `zip -r ad-swap-for-twitch-X.Y.Z.zip manifest.json defaults.js content.js cleanup.js popup.html popup.js icon.svg icons`
+   `zip -r ad-swap-for-twitch-X.Y.Z.zip manifest.json background.js defaults.js content.js cleanup.js popup.html popup.js icon.svg icons`
 3. Check it: `npx web-ext lint --source-dir ad-swap-for-twitch-X.Y.Z.zip`
 4. Add the version notes to `LISTING.md`, and save them as AMO metadata JSON outside the repo:
    `{"version": {"release_notes": {"en-US": "..."}}}`
@@ -98,5 +104,12 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   break screen. May also fix the swap starting on subscribed channels (not confirmed).
   Not yet tested on real ad breaks. The preview running ~4 s ahead of the stream is the gap
   between Twitch's two feeds; the extension never moves playback time.
+- 2.2.6 (not uploaded yet, 2026-11-13): with no preview the ad still showed for about a
+  second before the break screen, because the on-page "Ad" label appears after the ad does.
+  New `background.js` reads the stream playlists, where Twitch marks stitched ads before the
+  player shows them, so the ad is muted and covered from its first frame. Side effect: the
+  break screen can come up a couple of seconds before the ad itself. Adds the webRequest
+  permissions (users get asked on update). Not yet tested on real ad breaks: confirm in Zen
+  with Debug logging ("ad in the stream's playlist", then "ad started ... (playlist)").
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.

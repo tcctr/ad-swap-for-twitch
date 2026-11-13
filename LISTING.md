@@ -35,6 +35,9 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.2.6
+When there's no stream preview, the ad no longer flashes on screen before the break screen. Ad Swap now spots the ad in the stream itself, before Twitch shows it, so it's covered and muted from the very first frame. This needs a new permission to read Twitch's video playlists; they are only read, never changed or sent anywhere.
+
 ## Version notes for 2.2.5
 Fixes the stream preview's sound and picture drifting apart during ads in fullscreen. The sound now always comes from the preview that's on screen, and every other video stays muted. Ads are also spotted sooner, so when there's no stream preview the ad is muted and covered without first playing for a moment. A stream preview that Twitch keeps hidden, or that isn't visible in fullscreen, no longer counts, so the break screen covers the ad instead of letting it show.
 
