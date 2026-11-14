@@ -35,6 +35,9 @@ Ad Swap collects no data and talks to no servers. Settings are stored in your br
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.2.7
+Fixes 2.2.6's early ad detection, which never kicked in: Twitch serves its stream playlists from a different address than expected. When there's no stream preview, the ad is now covered and muted before it shows, instead of a second later. This adds that address to the permission for reading Twitch's video playlists (only read, never changed or sent anywhere).
+
 ## Version notes for 2.2.6
 When there's no stream preview, the ad no longer flashes on screen before the break screen. Ad Swap now spots the ad in the stream itself, before Twitch shows it, so it's covered and muted from the very first frame. This needs a new permission to read Twitch's video playlists; they are only read, never changed or sent anywhere.
 

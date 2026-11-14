@@ -41,8 +41,11 @@
   // The playlist says an ad is coming or playing. It ends a few seconds after the live edge
   // goes back to the stream, since the player is that far behind. A hint from before the
   // last ad ended is stale (old ad segments), so it can't start a new one.
-  function onPlaylist({ key, ad }) {
+  let lastTail = "";
+  function onPlaylist({ key, ad, tail }) {
     const now = Date.now();
+    if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
+    lastTail = tail || lastTail;
     for (const [k, p] of playlists) if (now - p.at > 6000) playlists.delete(k); // gone, e.g. other channel
     const before = [...playlists.values()].some((p) => p.ad);
     playlists.set(key, { ad, at: now });
@@ -385,6 +388,9 @@
       else return;
     }
 
+    if (label && !sawAdLabel) {
+      log("Ad label showing", adHint() ? `${now - hintStart} ms after the playlist hint` : "(no playlist hint)");
+    }
     if (label) sawAdLabel = true;
     // Trust the "Ad" label if we saw it; otherwise go by the playlist and the preview stopping.
     const over = sawAdLabel ? !label : !usable && !hint;

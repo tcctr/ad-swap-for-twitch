@@ -5,7 +5,7 @@ No build step: these files are the source and get zipped as-is for upload.
 
 ## Files
 - `manifest.json`: version, permissions (storage, plus webRequest/webRequestBlocking on
-  `*.hls.ttvnw.net` to read the stream playlists), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
+  `*.hls.ttvnw.net` and `*.playlist.ttvnw.net` to read the stream playlists), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
   Minimum Firefox 140 (142 on Android) because of `data_collection_permissions`.
 - `defaults.js`: default settings shared by everything. Only the ad features are on by default.
 - `content.js`: the ad swap. Detects ads (Twitch's "Ad" label, or the corner preview playing),
@@ -13,7 +13,7 @@ No build step: these files are the source and get zipped as-is for upload.
   (position: fixed to the player's rect, with offset correction for transformed ancestors),
   shows a break screen when there is no preview, and hands back to the stream at the end
   without a black gap (keeps the preview up until the main video is moving again, max 4 s).
-- `background.js`: reads each Twitch media playlist (`*.hls.ttvnw.net/*.m3u8`) as it passes,
+- `background.js`: reads each Twitch media playlist (`*.playlist.ttvnw.net/*.m3u8`, e.g. `eus21.playlist.ttvnw.net`; `*.hls.ttvnw.net` kept too) as it passes,
   unchanged, and tells the tab whether its newest segment is an ad (playlist mentions
   `stitched` and the last `#EXTINF` isn't titled `live`). This arrives before the ad is on
   screen; `content.js` treats it as an ad start, so the break screen covers the first frame.
@@ -111,5 +111,11 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   break screen can come up a couple of seconds before the ad itself. Adds the webRequest
   permissions (users get asked on update). Not yet tested on real ad breaks: confirm in Zen
   with Debug logging ("ad in the stream's playlist", then "ad started ... (playlist)").
+- 2.2.7 (prepared 2026-11-14, not uploaded yet): 2.2.6's playlist check never ran, because
+  Twitch serves media playlists from `*.playlist.ttvnw.net` (seen: `eus21.playlist.ttvnw.net`),
+  not `*.hls.ttvnw.net`; with a preview the swap was still instant because the preview itself
+  triggers it. Adds that host (new permission prompt on update). Debug logging now prints the
+  end of any playlist with an ad marker and how long after the playlist hint the "Ad" label
+  appeared. Not yet tested on real ad breaks.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.

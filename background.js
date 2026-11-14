@@ -25,8 +25,10 @@ api.webRequest.onBeforeRequest.addListener((details) => {
     filter.close();
     // Without query string: the same playlist keeps its key across refreshes.
     const key = details.url.split("?")[0];
-    api.tabs.sendMessage(details.tabId, { type: "playlist", key, ad: liveEdgeIsAd(text) })
+    // For Debug logging: the end of any playlist that mentions an ad, to see how Twitch marks it.
+    const tail = text.includes("stitched") ? text.trim().split("\n").slice(-12).join("\n") : "";
+    api.tabs.sendMessage(details.tabId, { type: "playlist", key, ad: liveEdgeIsAd(text), tail })
       .catch(() => {}); // tab without the page script (e.g. still loading)
   };
   filter.onerror = () => {};
-}, { urls: ["*://*.hls.ttvnw.net/*"] }, ["blocking"]);
+}, { urls: ["*://*.hls.ttvnw.net/*", "*://*.playlist.ttvnw.net/*"] }, ["blocking"]);
