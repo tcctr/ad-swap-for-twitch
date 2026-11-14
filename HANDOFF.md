@@ -117,5 +117,15 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   triggers it. Adds that host (new permission prompt on update). Debug logging now prints the
   end of any playlist with an ad marker and how long after the playlist hint the "Ad" label
   appeared. Not yet tested on real ad breaks.
+- 2.3.0 (signed unlisted on 2026-11-14 as a test build for the user, not on the listing):
+  "Skip ads when Twitch allows it" (`skipAds`, on by default). `background.js` reads the master
+  playlist from `usher.ttvnw.net` to map each media playlist to its channel and quality; when a
+  media playlist has ad segments it asks `gql.twitch.tv` for another playback token (player types
+  embed, picture-by-picture, autoplay), loads that copy's media playlist of the same quality, and
+  hands it to the player if it has no ads. Otherwise (or after 4 s) the original goes through and
+  the swap/break screen covers the ad. New permissions: `usher.ttvnw.net`, `gql.twitch.tv`.
+  Not yet tested on real ads. Before a listed release, rewrite the AMO description: it says the
+  add-on "doesn't block or skip anything" and "talks to no servers", both untrue from 2.3.0.
+  The next listed version must be 2.3.1 or later (2.3.0 is used).
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.

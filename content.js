@@ -42,10 +42,13 @@
   // goes back to the stream, since the player is that far behind. A hint from before the
   // last ad ended is stale (old ad segments), so it can't start a new one.
   let lastTail = "";
-  function onPlaylist({ key, ad, tail }) {
+  function onPlaylist({ key, ad, tail, skipped, skipFailed, unknown }) {
     const now = Date.now();
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
     lastTail = tail || lastTail;
+    if (skipped) log("ad skipped: playing an ad-free copy of the stream", { via: skipped });
+    if (skipFailed) log("no ad-free copy of the stream, swapping instead");
+    if (unknown) log("ad in a playlist whose channel isn't known yet, can't skip it");
     for (const [k, p] of playlists) if (now - p.at > 6000) playlists.delete(k); // gone, e.g. other channel
     const before = [...playlists.values()].some((p) => p.ad);
     playlists.set(key, { ad, at: now });

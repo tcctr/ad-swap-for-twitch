@@ -1,7 +1,7 @@
 // Default settings, shared by the page scripts and the settings menu.
 // Only the ad swap is on out of the box; the page tweaks are opt-in.
 globalThis.TAS_DEFAULTS = {
-  enabled: true, enlarge: true, breakScreen: true,
+  enabled: true, skipAds: true, enlarge: true, breakScreen: true,
   hideSidebar: false, hideFollowedChannels: false, hideLiveChannels: false,
   hideSidebarAlsoWatch: false, hideShowMore: false, hideSidebarArrow: false,
   hideAlsoWatch: false, hideBrowse: false, hideTopIcons: false,
