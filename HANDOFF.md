@@ -127,7 +127,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   Not yet tested on real ads. Before a listed release, rewrite the AMO description: it says the
   add-on "doesn't block or skip anything" and "talks to no servers", both untrue from 2.3.0.
   The next listed version must be 2.3.1 or later (2.3.0 is used).
-- 2.3.1 (same code as 2.3.0, listed on AMO 2026-11-14 at the user's request, before testing on
+- 2.3.1 (same code as 2.3.0, uploaded listed with `web-ext sign` 2026-11-14, approved and signed straight away at the user's request, before testing on
   real ads). LISTING.md summary and description were rewritten for skipping ads.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.
