@@ -111,7 +111,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   break screen can come up a couple of seconds before the ad itself. Adds the webRequest
   permissions (users get asked on update). Not yet tested on real ad breaks: confirm in Zen
   with Debug logging ("ad in the stream's playlist", then "ad started ... (playlist)").
-- 2.2.7 (prepared 2026-11-14, not uploaded yet): 2.2.6's playlist check never ran, because
+- 2.2.7 (uploaded with `web-ext sign` on 2026-11-14, approved and signed straight away): 2.2.6's playlist check never ran, because
   Twitch serves media playlists from `*.playlist.ttvnw.net` (seen: `eus21.playlist.ttvnw.net`),
   not `*.hls.ttvnw.net`; with a preview the swap was still instant because the preview itself
   triggers it. Adds that host (new permission prompt on update). Debug logging now prints the
