@@ -6,17 +6,19 @@ Copy each field into the matching box on the submission form.
 Ad Swap for Twitch
 
 ## Summary (max 250 characters)
-Keep watching during Twitch ads. When Twitch shows the small live-stream preview during an ad break, Ad Swap mutes the ad, plays the stream's sound and enlarges the stream over the ad.
+Keep watching during Twitch ads. Ad Swap skips the ad when Twitch has an ad-free copy of the stream, and otherwise mutes it and enlarges the small live preview over it, or covers it with a break screen.
 
 ## Description
-When an ad break starts on Twitch, Twitch often keeps the live stream playing in a small, muted box in the corner of the player. Ad Swap for Twitch makes that the main thing you watch:
+When an ad break starts on Twitch, Ad Swap for Twitch keeps the stream in front of you:
 
+• Skips the ad when Twitch offers an ad-free copy of the stream (the kind its embedded players use), so the stream just keeps playing. Can be switched off in the menu
+• Otherwise, when Twitch keeps the live stream playing in a small, muted box in the corner, Ad Swap makes that the main thing you watch:
 • Mutes the ad and plays the stream's sound at your usual volume
 • Enlarges the stream to cover the whole player, including in fullscreen
 • Puts everything back the moment the ad break ends, without a black gap
 • No preview this time? Shows a calm break screen with the ad countdown instead of the ad
 
-Ads still play, and channels still get credit for them. Ad Swap doesn't block or skip anything; it just lets you keep following the stream while they run.
+With "Skip ads" on, skipped ads don't play, so channels don't get credit for them. Switch it off to let ads play with only the swap and break screen.
 
 Optional page tweaks (all off by default, switch them on in the extension's menu):
 • Hide the whole left sidebar, or each part of it on its own: Followed Channels, Live Channels (Recommended Channels), Viewers Also Watch, the "Show More" buttons and the collapse arrow
@@ -31,9 +33,12 @@ Good to know:
 • The preview is lower quality than the main stream.
 • Twitch changes its site often. If something stops working, please mention it in a review on this page.
 
-Ad Swap collects no data and talks to no servers. Settings are stored in your browser and synced through Firefox Sync if you use it.
+Ad Swap collects no data. To skip an ad it only talks to Twitch itself (gql.twitch.tv and usher.ttvnw.net), to load the ad-free copy of the stream you're watching. Settings are stored in your browser and synced through Firefox Sync if you use it.
 
 This extension is not affiliated with or endorsed by Twitch.
+
+## Version notes for 2.3.1
+New: skip ads. When an ad comes up, Ad Swap asks Twitch for an ad-free copy of the same stream and plays that instead, so the ad never shows. If Twitch has ads on every copy, the stream preview or break screen takes over as before. On by default; switch off "Skip ads when Twitch allows it" in the menu to let ads play. Needs permission to talk to Twitch's playlist and token servers (gql.twitch.tv, usher.ttvnw.net).
 
 ## Version notes for 2.2.7
 Fixes 2.2.6's early ad detection, which never kicked in: Twitch serves its stream playlists from a different address than expected. When there's no stream preview, the ad is now covered and muted before it shows, instead of a second later. This adds that address to the permission for reading Twitch's video playlists (only read, never changed or sent anywhere).
