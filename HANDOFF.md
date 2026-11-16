@@ -147,7 +147,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   two. Now only headings styled like the title (same tag and class) or named like a section
   count as other sections, the climb stops below the tab bar, and it is redone every pass.
   Checked on a mock page with jsdom, not yet on real Twitch.
-- 2.3.4 (2026-11-16, not uploaded yet): user saw the break screen instead of the preview on
+- 2.3.4 (uploaded listed with `web-ext sign` on 2026-11-16, approved and signed straight away): user saw the break screen instead of the preview on
   ads with a preview, once 2.3.2 made playlist reading work. Likely causes, both fixed without a
   log to confirm: (1) the preview player's own playlist went through "Skip ads" and was held up
   to 4 s; master playlists now record the token's `player_type` and `picture-by-picture`
