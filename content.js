@@ -26,6 +26,7 @@
   let hintStart = 0;           // when a playlist first showed an ad at its live edge
   let hintUntil = 0;           // keep the playlist's ad signal until then
   let lastEndAt = 0;           // when the last ad ended
+  let lastSkipAt = 0;          // when background.js last swapped in an ad-free copy of the stream
 
   const log = (...a) => settings.debug && console.log("[Ad Swap]", ...a);
 
@@ -48,7 +49,11 @@
     playlistsSeen++;
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
     lastTail = tail || lastTail;
-    if (skipped) log("ad skipped: playing an ad-free copy of the stream", { via: skipped });
+    if (skipped) {
+      if (now - lastSkipAt > 10000) log("ad skipped: playing an ad-free copy of the stream", { via: skipped });
+      lastSkipAt = now;
+      queueTick();
+    }
     if (skipFailed) log("no ad-free copy of the stream, swapping instead");
     if (unknown) log("ad in a playlist whose channel isn't known yet, can't skip it");
     for (const [k, p] of playlists) if (now - p.at > 6000) playlists.delete(k); // gone, e.g. other channel
@@ -380,8 +385,11 @@
       if (inAd) endAd();
       return;
     }
-    const label = adShowing();
-    const hint = adHint();
+    // While an ad-free copy is playing, Twitch may still show its "Ad" label, but no ad plays:
+    // don't cover or mute the stream for it. A preview playing still counts (a real ad).
+    const skipping = Date.now() - lastSkipAt < 6000;
+    const label = !skipping && adShowing();
+    const hint = !skipping && adHint();
     if (label || hint) retiredPreview = null; // a new ad: any playing preview belongs to it
     const { main, pbyp } = findVideos();
     const usable = previewUsable(pbyp);

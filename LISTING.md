@@ -39,6 +39,9 @@ Ad Swap collects no data. To skip an ad it only talks to Twitch itself (gql.twit
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.3.4
+Fixes the break screen covering ads that have a stream preview: the preview is shown again. Also, when an ad has been skipped, Twitch's "Ad" label no longer brings up the break screen over the stream.
+
 ## Version notes for 2.3.3
 The Following page options now hide the whole section, not just its title.
 
