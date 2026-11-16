@@ -39,6 +39,9 @@ Ad Swap collects no data. To skip an ad it only talks to Twitch itself (gql.twit
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.3.3
+The Following page options now hide the whole section, not just its title.
+
 ## Version notes for 2.3.2
 Fixes ad skipping and early ad detection, which never ran: Firefox also needs permission for twitch.tv itself before an add-on can read the video playlists the page loads. When there's no stream preview, the ad should now be skipped or covered before it shows.
 

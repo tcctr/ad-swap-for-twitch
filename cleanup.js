@@ -104,8 +104,9 @@
     }
   }
 
-  // Following page sections, found by their (English) headings. Each heading's section is the
-  // biggest block around it that holds no other heading, so neighbouring sections stay.
+  // Following page sections, found by their (English) headings. Cards inside a section have
+  // headings of their own (titles), so only headings styled like this one count as other
+  // sections: the section is the biggest block around the title that holds no other such title.
   const FOLLOWING_KINDS = [
     ["recommended", /recommended|you might like|suggested/i],
     ["continue", /continue watching/i],
@@ -116,12 +117,15 @@
   const HEADING = 'h1, h2, h3, h4, h5, [role="heading"]';
   const seenHeadings = new Set();
 
+  const sameStyle = (a, b) => a.tagName === b.tagName && a.className === b.className;
+
   function markFollowing() {
     if (!location.pathname.startsWith(FOLLOWING)) return;
     const main = document.querySelector("main") || document.body;
     if (!main) return;
-    for (const h of main.querySelectorAll(HEADING)) {
-      if (h.closest(SIDEBAR) || h.closest("[data-tas-following]")) continue;
+    const headings = [...main.querySelectorAll(HEADING)]
+      .filter((h) => !h.closest(SIDEBAR) && !h.closest("article")); // article: a card's own title
+    for (const h of headings) {
       const text = h.textContent.trim().replace(/\s+/g, " ");
       if (!text || text.length > 80) continue;
       const kind = (FOLLOWING_KINDS.find(([, re]) => re.test(text)) || [])[0];
@@ -130,14 +134,22 @@
         console.log("[Ad Swap] Following section:", JSON.stringify(text), kind || "(kept)");
       }
       if (!kind) continue;
+      // Other section titles: styled like this one, or named like a section (incl. "Live channels").
+      const others = headings.filter((o) => o !== h &&
+        (sameStyle(o, h) || /^(live|followed)\b|channels$/i.test(o.textContent.trim()) ||
+         FOLLOWING_KINDS.some(([, re]) => re.test(o.textContent))));
       let section = h;
       while (section.parentElement && section.parentElement !== main &&
-             section.parentElement.querySelectorAll(HEADING).length === 1) {
+             !others.some((o) => section.parentElement.contains(o)) &&
+             !section.parentElement.querySelector('video, .chat-shell, [role="tablist"]')) {
         section = section.parentElement;
       }
-      // Never hide anything holding the player, chat or the page's tab bar.
-      if (section.querySelector('video, .chat-shell, [role="tablist"]')) continue;
-      section.setAttribute("data-tas-following", kind);
+      // Re-checked every pass: the section may have been smaller before Twitch filled it in.
+      for (const inner of section.querySelectorAll("[data-tas-following]")) inner.removeAttribute("data-tas-following");
+      if (section.getAttribute("data-tas-following") !== kind) {
+        section.setAttribute("data-tas-following", kind);
+        if (settings.debug) console.log("[Ad Swap] hid Following section:", JSON.stringify(text), section);
+      }
     }
   }
 
