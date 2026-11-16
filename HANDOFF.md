@@ -130,7 +130,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   The next listed version must be 2.3.1 or later (2.3.0 is used).
 - 2.3.1 (same code as 2.3.0, uploaded listed with `web-ext sign` 2026-11-14, approved and signed straight away at the user's request, before testing on
   real ads). LISTING.md summary and description were rewritten for skipping ads.
-- 2.3.2 (2026-11-16): the real reason 2.2.6–2.3.1's playlist reading never ran: Firefox only
+- 2.3.2 (uploaded listed with `web-ext sign` on 2026-11-16, approved and signed straight away): the real reason 2.2.6–2.3.1's playlist reading never ran: Firefox only
   lets webRequest see a request if the add-on has host permission for the requested URL *and*
   the page that made it, and the manifest had no `twitch.tv` host permission (content script
   matches don't count). Added `*://*.twitch.tv/*` (replaces `gql.twitch.tv`). The Debug status
