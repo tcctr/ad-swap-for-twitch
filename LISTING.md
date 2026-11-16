@@ -27,6 +27,8 @@ Optional page tweaks (all off by default, switch them on in the extension's menu
 • Hide top-bar icons, keeping notifications and your profile
 • Make the Twitch logo open your Following page
 • Open your Following page instead of the Twitch home page
+• On the Following page, hide recommendations, "Continue Watching", "Latest Videos", "Upcoming Streams" and "Live Categories" (when Twitch is in English)
+• Hide the Following page's Live, Videos, Categories and Channels tabs, keeping Overview
 
 Good to know:
 • The stream can only be swapped in when Twitch shows its small preview. Twitch doesn't show it for every ad, for example usually not for the ads before a stream starts.
@@ -36,6 +38,11 @@ Good to know:
 Ad Swap collects no data. To skip an ad it only talks to Twitch itself (gql.twitch.tv and usher.ttvnw.net), to load the ad-free copy of the stream you're watching. Settings are stored in your browser and synced through Firefox Sync if you use it.
 
 This extension is not affiliated with or endorsed by Twitch.
+
+## Version notes for 2.3.2
+Fixes ad skipping and early ad detection, which never ran: Firefox also needs permission for twitch.tv itself before an add-on can read the video playlists the page loads. When there's no stream preview, the ad should now be skipped or covered before it shows.
+
+New options for the Following page: hide recommended channels and categories, "Continue Watching", "Latest Videos", "Upcoming Streams" and "Live Categories" (when Twitch is in English), and its Live, Videos, Categories and Channels tabs.
 
 ## Version notes for 2.3.1
 New: skip ads. When an ad comes up, Ad Swap asks Twitch for an ad-free copy of the same stream and plays that instead, so the ad never shows. If Twitch has ads on every copy, the stream preview or break screen takes over as before. On by default; switch off "Skip ads when Twitch allows it" in the menu to let ads play. Needs permission to talk to Twitch's playlist and token servers (gql.twitch.tv, usher.ttvnw.net).

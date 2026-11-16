@@ -42,8 +42,10 @@
   // goes back to the stream, since the player is that far behind. A hint from before the
   // last ad ended is stale (old ad segments), so it can't start a new one.
   let lastTail = "";
+  let playlistsSeen = 0;      // playlist reports from background.js (0 = it sees no requests)
   function onPlaylist({ key, ad, tail, skipped, skipFailed, unknown }) {
     const now = Date.now();
+    playlistsSeen++;
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
     lastTail = tail || lastTail;
     if (skipped) log("ad skipped: playing an ad-free copy of the stream", { via: skipped });
@@ -471,7 +473,7 @@
              ` t=${v.currentTime.toFixed(2)} buffered=${v.buffered.length ? (v.buffered.end(v.buffered.length - 1) - v.currentTime).toFixed(2) : 0}s` +
              (q ? ` frames=${q.totalVideoFrames} dropped=${q.droppedVideoFrames}` : "");
     });
-    log({ inAd, adLabel: adShowing(), sawAdLabel, playlistAd: adHint(), fullscreen: describe(fs), videos,
+    log({ inAd, adLabel: adShowing(), sawAdLabel, playlistAd: adHint(), playlistsSeen, fullscreen: describe(fs), videos,
           styled: [...styled.keys()].slice(0, 1).map(describe) });
   }, 2000);
 })();

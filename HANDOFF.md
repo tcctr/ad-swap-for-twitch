@@ -5,7 +5,8 @@ No build step: these files are the source and get zipped as-is for upload.
 
 ## Files
 - `manifest.json`: version, permissions (storage, plus webRequest/webRequestBlocking on
-  `*.hls.ttvnw.net` and `*.playlist.ttvnw.net` to read the stream playlists), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
+  `*.hls.ttvnw.net`, `*.playlist.ttvnw.net`, `usher.ttvnw.net` and `*.twitch.tv` (the page
+  itself must be covered too, or Firefox hides its requests) to read the stream playlists), Gecko ID `twitch-ad-swap-7f3c2a@extensions`.
   Minimum Firefox 140 (142 on Android) because of `data_collection_permissions`.
 - `defaults.js`: default settings shared by everything. Only the ad features are on by default.
 - `content.js`: the ad swap. Detects ads (Twitch's "Ad" label, or the corner preview playing),
@@ -129,5 +130,17 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   The next listed version must be 2.3.1 or later (2.3.0 is used).
 - 2.3.1 (same code as 2.3.0, uploaded listed with `web-ext sign` 2026-11-14, approved and signed straight away at the user's request, before testing on
   real ads). LISTING.md summary and description were rewritten for skipping ads.
+- 2.3.2 (2026-11-16): the real reason 2.2.6–2.3.1's playlist reading never ran: Firefox only
+  lets webRequest see a request if the add-on has host permission for the requested URL *and*
+  the page that made it, and the manifest had no `twitch.tv` host permission (content script
+  matches don't count). Added `*://*.twitch.tv/*` (replaces `gql.twitch.tv`). The Debug status
+  line now has `playlistsSeen`: if it stays 0 on a playing stream, background.js still sees nothing.
+  Also new: Following-page options (`hideFollowingRecommended`, `hideFollowingContinue`,
+  `hideFollowingVideos`, `hideFollowingUpcoming`, `hideFollowingCategories`) in `cleanup.js`. Sections are found by English heading text; the
+  hidden block is the biggest ancestor holding only that heading (tagged `data-tas-following`).
+  Written without seeing Twitch's Following markup: with Debug logging on, every heading found
+  is logged as `Following section: "..." kind|(kept)`. Untested.
+  `hideFollowingTabs` hides the Live/Videos/Categories/Channels tabs by their links
+  (`/directory/following/live|videos|categories|games|channels`), tagged `data-tas-following-tab`.
 - Store icon: `icons/icon-128.png` (128×128, transparent) is ready but still has to be
   uploaded on the Developer Hub product page. `screenshot-menu.png` shows the 2.2.0 menu.

@@ -6,6 +6,8 @@ globalThis.TAS_DEFAULTS = {
   hideSidebarAlsoWatch: false, hideShowMore: false, hideSidebarArrow: false,
   hideAlsoWatch: false, hideBrowse: false, hideTopIcons: false,
   logoToFollowing: false, startOnFollowing: false,
+  hideFollowingRecommended: false, hideFollowingContinue: false, hideFollowingVideos: false,
+  hideFollowingUpcoming: false, hideFollowingCategories: false, hideFollowingTabs: false,
   debug: false,
 };
 

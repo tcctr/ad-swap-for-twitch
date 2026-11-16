@@ -23,6 +23,12 @@
     html.tas-hide-browse a[data-a-target="browse-link"],
     html.tas-hide-browse nav a[href="/directory"] { display: none !important; }
     html.tas-hide-top-icons [data-tas-top-icon] { display: none !important; }
+    html.tas-hide-fol-recommended [data-tas-following="recommended"],
+    html.tas-hide-fol-continue [data-tas-following="continue"],
+    html.tas-hide-fol-videos [data-tas-following="videos"],
+    html.tas-hide-fol-upcoming [data-tas-following="upcoming"],
+    html.tas-hide-fol-categories [data-tas-following="categories"],
+    html.tas-hide-fol-tabs [data-tas-following-tab] { display: none !important; }
   `;
 
   // At document_start the page may not exist yet; attach as soon as it does.
@@ -98,6 +104,60 @@
     }
   }
 
+  // Following page sections, found by their (English) headings. Each heading's section is the
+  // biggest block around it that holds no other heading, so neighbouring sections stay.
+  const FOLLOWING_KINDS = [
+    ["recommended", /recommended|you might like|suggested/i],
+    ["continue", /continue watching/i],
+    ["videos", /latest videos|recent videos|recent broadcasts/i],
+    ["upcoming", /upcoming|scheduled/i],
+    ["categories", /categor/i], // after "recommended", so "Recommended categories" stays there
+  ];
+  const HEADING = 'h1, h2, h3, h4, h5, [role="heading"]';
+  const seenHeadings = new Set();
+
+  function markFollowing() {
+    if (!location.pathname.startsWith(FOLLOWING)) return;
+    const main = document.querySelector("main") || document.body;
+    if (!main) return;
+    for (const h of main.querySelectorAll(HEADING)) {
+      if (h.closest(SIDEBAR) || h.closest("[data-tas-following]")) continue;
+      const text = h.textContent.trim().replace(/\s+/g, " ");
+      if (!text || text.length > 80) continue;
+      const kind = (FOLLOWING_KINDS.find(([, re]) => re.test(text)) || [])[0];
+      if (settings.debug && !seenHeadings.has(text)) {
+        seenHeadings.add(text);
+        console.log("[Ad Swap] Following section:", JSON.stringify(text), kind || "(kept)");
+      }
+      if (!kind) continue;
+      let section = h;
+      while (section.parentElement && section.parentElement !== main &&
+             section.parentElement.querySelectorAll(HEADING).length === 1) {
+        section = section.parentElement;
+      }
+      // Never hide anything holding the player, chat or the page's tab bar.
+      if (section.querySelector('video, .chat-shell, [role="tablist"]')) continue;
+      section.setAttribute("data-tas-following", kind);
+    }
+  }
+
+  // Following page tabs other than Overview, by where they link (works in every language).
+  // The tab's wrapper goes too, as long as it holds no other link.
+  const FOLLOWING_TABS = ["live", "videos", "categories", "games", "channels"]
+    .map((t) => `a[href="${FOLLOWING}/${t}"], a[href^="${FOLLOWING}/${t}?"]`).join(", ");
+
+  function markFollowingTabs() {
+    for (const a of document.querySelectorAll(FOLLOWING_TABS)) {
+      if (a.closest(SIDEBAR) || a.closest("[data-tas-following-tab]")) continue;
+      let target = a;
+      while (target.parentElement && target.parentElement.querySelectorAll("a").length === 1 &&
+             !target.parentElement.matches('[role="tablist"], nav, main, ul, ol')) {
+        target = target.parentElement;
+      }
+      target.setAttribute("data-tas-following-tab", "");
+    }
+  }
+
   // Top bar: hide every icon button except notifications, the profile menu,
   // the logo and search. Matched loosely because Twitch's markup changes.
   const TOP_NAV = 'nav[data-a-target="top-nav-container"], nav.top-nav, #root nav';
@@ -147,6 +207,12 @@
     root.classList.toggle("tas-hide-also-watch", !!settings.hideAlsoWatch);
     root.classList.toggle("tas-hide-browse", !!settings.hideBrowse);
     root.classList.toggle("tas-hide-top-icons", !!settings.hideTopIcons);
+    root.classList.toggle("tas-hide-fol-recommended", !!settings.hideFollowingRecommended);
+    root.classList.toggle("tas-hide-fol-continue", !!settings.hideFollowingContinue);
+    root.classList.toggle("tas-hide-fol-videos", !!settings.hideFollowingVideos);
+    root.classList.toggle("tas-hide-fol-upcoming", !!settings.hideFollowingUpcoming);
+    root.classList.toggle("tas-hide-fol-categories", !!settings.hideFollowingCategories);
+    root.classList.toggle("tas-hide-fol-tabs", !!settings.hideFollowingTabs);
   }
 
   // The Following page only works when logged in, so the redirects only apply then.
@@ -206,6 +272,10 @@
     if (settings.hideAlsoWatch) markAlsoWatch();
     if (settings.hideFollowedChannels || settings.hideLiveChannels || settings.hideSidebarAlsoWatch) markSidebarSections();
     if (settings.hideTopIcons) markTopIcons();
+    if (settings.hideFollowingRecommended || settings.hideFollowingContinue ||
+        settings.hideFollowingVideos || settings.hideFollowingUpcoming ||
+        settings.hideFollowingCategories || settings.debug) markFollowing();
+    if (settings.hideFollowingTabs) markFollowingTabs();
   }, 1000);
   setInterval(() => { if (loaded) { retargetLogo(); checkHome(); } }, 250);
 })();
