@@ -142,7 +142,7 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   is logged as `Following section: "..." kind|(kept)`. Untested.
   `hideFollowingTabs` hides the Live/Videos/Categories/Channels tabs by their links
   (`/directory/following/live|videos|categories|games|channels`), tagged `data-tas-following-tab`.
-- 2.3.3 (2026-11-16, not uploaded yet): 2.3.2's Following options hid only the section titles,
+- 2.3.3 (uploaded listed with `web-ext sign` on 2026-11-16, approved and signed straight away): 2.3.2's Following options hid only the section titles,
   because the cards inside have headings too and the climb stopped at the first block holding
   two. Now only headings styled like the title (same tag and class) or named like a section
   count as other sections, the climb stops below the tab bar, and it is redone every pass.
