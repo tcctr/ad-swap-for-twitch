@@ -37,20 +37,37 @@ No build step: these files are the source and get zipped as-is for upload.
 1. Bump `version` in `manifest.json`.
 2. Zip only the extension files:
    `zip -r ad-swap-for-twitch-X.Y.Z.zip manifest.json background.js defaults.js content.js cleanup.js popup.html popup.js icon.svg icons`
-3. Check it: `npx web-ext lint --source-dir ad-swap-for-twitch-X.Y.Z.zip`
+3. Check it: `npm test` must pass (see Testing), then `npx web-ext lint --source-dir ad-swap-for-twitch-X.Y.Z.zip`
 4. Add the version notes to `LISTING.md`, and save them as AMO metadata JSON outside the repo:
    `{"version": {"release_notes": {"en-US": "..."}}}`
 5. Upload with the AMO API. The keys are in `../amo-credentials.sh` (the folder above this repo,
    never committed):
-   `source ../amo-credentials.sh && npx web-ext sign --channel=listed --amo-metadata <json> --ignore-files HANDOFF.md LISTING.md README.md LICENSE '*.zip' screenshot-menu.png`
+   `source ../amo-credentials.sh && npx web-ext sign --channel=listed --amo-metadata <json> --ignore-files HANDOFF.md LISTING.md README.md LICENSE CLAUDE.md '*.zip' screenshot-menu.png tests package.json package-lock.json node_modules`
    The signed copy lands in `web-ext-artifacts/`. Check AMO for existing versions first: a version
    number can't be reused. Fallback: Upload New Version on the Developer Hub, answer "No" to
    source code.
 6. Update the status notes below.
 
-## Testing locally
-`npx web-ext run` in this folder starts Firefox with the extension loaded, or use
-about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
+## Testing
+Automated, in Zen itself (`/Applications/Zen.app`, or set `ZEN_BINARY`), headless and muted: no window
+opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `npm install` once.
+- `npm test`: unit tests + Zen mock-page tests. Must pass before any release.
+  - `tests/unit/`: the real `background.js` in a fake WebExtension API (`harness.mjs`), fed real
+    and synthetic playlists from `tests/fixtures/` (see its README).
+  - `tests/e2e/`: Zen with a test copy of the extension (Debug on, page scripts also on 127.0.0.1)
+    on `tests/e2e/mock/twitch.html`, a stand-in Twitch player whose ad label and corner preview the
+    tests switch on and off. Checks sound, enlarged preview, break screen and hand-back.
+- `npm run test:live`: Zen on a real top channel (logged out): extension connected and
+  `playlistsSeen > 0`.
+- `npm run ad-hunt [n] [--zen]`: asks Twitch for the top n channels' streams as each player type,
+  prints which carry ads, and saves sanitized ad playlists to `tests/fixtures/recorded/` (not
+  committed). `--zen` also watches each channel in Zen. Twitch served no ads to automated Zen
+  (2026-11-21), so real ad breaks still need a human session with Debug logging.
+- Tests read the extension's state from `<html data-tas-state>`, which `content.js` writes only
+  while Debug logging is on.
+- Selenium's driver lookup misreads Zen's version (1.x) as Firefox 1; `tests/e2e/zen.mjs`
+  fetches geckodriver directly and starts Zen with `-no-remote -new-instance`.
+- By hand: about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
 
 ## Known gaps
 - Twitch's page markup was matched from best guesses and confirmed by hand-testing in Zen;
@@ -59,6 +76,23 @@ about:debugging in Zen, then Load Temporary Add-on, and pick `manifest.json`.
   Followed/Live Channels in the collapsed sidebar if the expanded one wasn't seen first.
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
+
+## Unreleased (2026-11-21, after 2.3.4)
+- Fix: in Zen every webRequest has `tabId -1` and `tabs.query` lists no tabs (seen in automated
+  Zen 1.24.1b, headless and visible). `background.js` skipped all `tabId < 0` requests as its own,
+  so playlist reading and "Skip ads" never ran there (Debug showed `playlistsSeen: 0`). Now its own
+  requests are recognised by their `moz-extension://` origin, and reports go over a
+  `runtime.connect` port opened by `content.js` (matched by tab when known; otherwise sent to every
+  Twitch page with the channel, and a page showing another channel ignores it). Confirmed on real
+  Twitch in Zen: `playlistsSeen` > 0.
+- Debug logging also writes `<html data-tas-state>` (for the tests) and counts playlist reports.
+- Ad hunt (2026-11-21, logged out): pre-rolls on 4 of 8 top channels for the `site` player type;
+  `embed`, `popout`, `autoplay` (platform android) and `picture-by-picture` were all ad-free.
+- Next (from the 2026-11-21 review): remember "no ad-free copy" instead of retrying on every playlist
+  refresh (holds the player up to 4 s each time); send the page's own GQL headers and use vaft's
+  player types; blank out ad segments when there is no clean copy; pause/play the player after
+  switching copies; start the swap only after a `picture-by-picture` playlist was seen (the to-do
+  e2e test); lighter MutationObserver.
 
 ## Status (2026-11-11)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without

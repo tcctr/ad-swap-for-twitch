@@ -5,5 +5,7 @@ live-stream preview during an ad break, Ad Swap mutes the ad, plays the stream's
 enlarges the stream over the ad. With no preview, a break screen covers the ad instead.
 Optional tweaks tidy the Twitch page.
 
+Run `npm install` once, then `npm test` for the automated tests (in Zen, headless).
+
 See `HANDOFF.md` for how it works, how to test it and how to release an update, and
 `LISTING.md` for the addons.mozilla.org listing text.

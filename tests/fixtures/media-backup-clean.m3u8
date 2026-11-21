@@ -1,0 +1,10 @@
+#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:6
+#EXT-X-MEDIA-SEQUENCE:20102
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live1.ts
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live2.ts
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live3.ts

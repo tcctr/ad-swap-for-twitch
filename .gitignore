@@ -3,3 +3,5 @@
 web-ext-artifacts/
 node_modules/
 .amo-upload-uuid
+tests/fixtures/recorded/
+tests/live/out/

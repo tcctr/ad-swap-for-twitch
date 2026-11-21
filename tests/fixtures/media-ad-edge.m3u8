@@ -1,0 +1,17 @@
+#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:6
+#EXT-X-MEDIA-SEQUENCE:20102
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live1.ts
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live2.ts
+#EXTINF:2.000,live
+https://example.hls.ttvnw.net/v1/segment/live3.ts
+#EXT-X-DATERANGE:ID="stitched-ad-1795264600-30",CLASS="twitch-stitched-ad",START-DATE="2026-11-21T12:36:40.000Z",DURATION=30.000,X-TV-TWITCH-AD-POD-LENGTH="1",X-TV-TWITCH-AD-POD-POSITION="0",X-TV-TWITCH-AD-ROLL-TYPE="MIDROLL"
+#EXTINF:2.000,Amazon|0
+https://example.hls.ttvnw.net/v1/segment/ad1.ts
+#EXTINF:2.000,Amazon|0
+https://example.hls.ttvnw.net/v1/segment/ad2.ts
+#EXTINF:2.000,Amazon|0
+https://example.hls.ttvnw.net/v1/segment/ad3.ts

@@ -111,13 +111,37 @@ async function cleanPlaylist(variant) {
   return null;
 }
 
-function send(tabId, msg) {
-  api.tabs.sendMessage(tabId, { type: "playlist", ...msg }).catch(() => {}); // tab without the page script
+// Each Twitch page's script connects here. Zen can report both the page and the player's
+// requests without a tab (tabId -1, and tabs.query lists no tabs), so messages go over these
+// connections rather than tabs.sendMessage, and are matched to a page by tab when there is one.
+const pages = new Set(); // { port, tabId, url }
+api.runtime.onConnect.addListener((port) => {
+  if (port.name !== "tas-page") return;
+  const page = { port, tabId: port.sender && port.sender.tab ? port.sender.tab.id : -1,
+                 url: (port.sender && port.sender.url) || "" };
+  pages.add(page);
+  port.onMessage.addListener((m) => { if (m && m.type === "where") page.url = m.url; });
+  port.onDisconnect.addListener(() => pages.delete(page));
+});
+
+// Without a tab to go by, every Twitch page gets the report, with its channel, and a page
+// showing another channel ignores it (content.js).
+function send(details, variant, msg) {
+  const full = { type: "playlist", channel: variant ? variant.channel : "", ...msg };
+  const all = [...pages];
+  const byTab = details.tabId >= 0 ? all.filter((p) => p.tabId === details.tabId) : [];
+  for (const p of byTab.length ? byTab : all) {
+    try { p.port.postMessage(full); } catch (e) { pages.delete(p); }
+  }
 }
+
+// Requests this script makes itself (the ad-free copy) must not be filtered again.
+const OWN = api.runtime.getURL("");
+const isOwn = (details) => [details.originUrl, details.documentUrl].some((u) => u && u.startsWith(OWN));
 
 api.webRequest.onBeforeRequest.addListener((details) => {
   const url = new URL(details.url);
-  if (details.tabId < 0 || !url.pathname.endsWith(".m3u8")) return; // < 0: our own requests
+  if (isOwn(details) || !url.pathname.endsWith(".m3u8")) return;
   const master = url.hostname === "usher.ttvnw.net" ? (url.pathname.match(/\/hls\/([^/]+)\.m3u8$/) || [])[1] : null;
   const filter = api.webRequest.filterResponseData(details.requestId);
   const decoder = new TextDecoder();
@@ -154,14 +178,14 @@ api.webRequest.onBeforeRequest.addListener((details) => {
       if (clean) {
         filter.write(new TextEncoder().encode(clean.text));
         filter.close();
-        send(details.tabId, { key, ad: false, skipped: clean.via, tail });
+        send(details, variant, { key, ad: false, skipped: clean.via, tail });
         return;
       }
-      send(details.tabId, { key, ad: liveEdgeIsAd(text), skipFailed: true, tail });
+      send(details, variant, { key, ad: liveEdgeIsAd(text), skipFailed: true, tail });
       return passThrough();
     }
     passThrough();
-    send(details.tabId, { key, ad: liveEdgeIsAd(text), tail, unknown: !variant && text.includes("stitched") });
+    send(details, variant, { key, ad: liveEdgeIsAd(text), tail, unknown: !variant && text.includes("stitched") });
   };
   filter.onerror = () => {};
 }, { urls: ["*://*.hls.ttvnw.net/*", "*://*.playlist.ttvnw.net/*", "*://usher.ttvnw.net/*"] }, ["blocking"]);

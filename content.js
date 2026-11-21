@@ -44,9 +44,11 @@
   // last ad ended is stale (old ad segments), so it can't start a new one.
   let lastTail = "";
   let playlistsSeen = 0;      // playlist reports from background.js (0 = it sees no requests)
+  const reports = { ad: 0, skipped: 0, skipFailed: 0, unknown: 0 }; // for Debug logging and tests
   function onPlaylist({ key, ad, tail, skipped, skipFailed, unknown }) {
     const now = Date.now();
     playlistsSeen++;
+    for (const [k, v] of Object.entries({ ad, skipped, skipFailed, unknown })) if (v) reports[k]++;
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
     lastTail = tail || lastTail;
     if (skipped) {
@@ -444,9 +446,39 @@
     if (!settings.breakScreen) hideBreak();
   });
 
-  api.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.type === "playlist" && settings.enabled) onPlaylist(msg);
-  });
+  // The channel this page shows, if it's a channel page ("" for home, directory, etc.).
+  const NOT_CHANNELS = new Set(["", "directory", "search", "settings", "videos", "u", "subscriptions",
+    "inventory", "wallet", "drops", "turbo", "p", "downloads", "jobs", "friends", "messages"]);
+  function pageChannel() {
+    const parts = location.pathname.split("/").filter(Boolean).map((s) => s.toLowerCase());
+    if (["popout", "moderator", "embed"].includes(parts[0])) return parts[1] || "";
+    return NOT_CHANNELS.has(parts[0] || "") ? "" : parts[0];
+  }
+
+  // Playlist reports from background.js. When the browser can't say which tab a playlist
+  // belongs to (Zen), every Twitch page gets it: skip reports about another channel.
+  let port = null;
+  let portUrl = "";
+  function connect() {
+    try { port = api.runtime.connect({ name: "tas-page" }); } catch (e) { port = null; return; } // add-on gone
+    portUrl = location.href;
+    port.postMessage({ type: "where", url: portUrl });
+    port.onMessage.addListener((msg) => {
+      if (!msg || msg.type !== "playlist" || !settings.enabled) return;
+      const here = pageChannel();
+      if (msg.channel && here && msg.channel !== here) return;
+      onPlaylist(msg);
+    });
+    port.onDisconnect.addListener(() => { port = null; setTimeout(connect, 1000); });
+  }
+  connect();
+  // Twitch changes pages without reloading: keep background.js up to date on where this page is.
+  setInterval(() => {
+    if (port && location.href !== portUrl) {
+      portUrl = location.href;
+      port.postMessage({ type: "where", url: portUrl });
+    }
+  }, 500);
 
   setInterval(tick, 250);
   // Also react to page changes (an ad starting or ending) without waiting for the next check.
@@ -467,6 +499,22 @@
   for (const e of ["play", "playing", "loadeddata", "emptied"]) document.addEventListener(e, queueTick, true);
   document.addEventListener("fullscreenchange", () => setTimeout(tick, 50));
   console.debug("[Ad Swap] loaded");
+
+  // With debug on, the current state is also kept on <html data-tas-state>, for the automated tests.
+  setInterval(() => {
+    const root = document.documentElement;
+    if (!root) return;
+    if (!settings.debug) { if (root.hasAttribute("data-tas-state")) root.removeAttribute("data-tas-state"); return; }
+    const main = mainVideo || findVideos().main;
+    root.setAttribute("data-tas-state", JSON.stringify({
+      inAd, adLabel: adShowing(), playlistAd: adHint(), playlistsSeen, reports, connected: !!port,
+      skipping: Date.now() - lastSkipAt < 6000, breakScreen: !!(breakEl && breakEl.isConnected),
+      enlarged: styled.size > 0, mainMuted: main ? main.muted : null,
+      previewMuted: pbypVideo ? pbypVideo.muted : null, preview: describe(pbypVideo),
+      previewRect: pbypVideo ? (({ left, top, width, height }) => ({ left, top, width, height }))(pbypVideo.getBoundingClientRect()) : null,
+      playerRect: main ? (({ left, top, width, height }) => ({ left, top, width, height }))(targetRect(main)) : null,
+    }));
+  }, 250);
 
   // With debug on, report what the extension sees every 2 seconds.
   setInterval(() => {

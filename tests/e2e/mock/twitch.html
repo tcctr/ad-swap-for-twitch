@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mock Twitch channel</title>
+<style>
+  body { margin: 0; background: #0e0e10; font: 14px sans-serif; color: #fff; }
+  #root { display: flex; }
+  #side-nav { width: 240px; height: 100vh; }
+  main { flex: 1; padding: 20px; }
+  /* Twitch wraps the player in transformed boxes; keep one so offset correction is exercised. */
+  .persistent-player { transform: translateZ(0); }
+  [data-a-target="video-player"] { position: relative; width: 960px; height: 540px; background: #000; }
+  [data-a-target="video-player"] > video { width: 100%; height: 100%; }
+  .picture-by-picture-player { position: absolute; right: 12px; bottom: 60px; width: 320px; height: 180px; }
+  .picture-by-picture-player video { width: 100%; height: 100%; }
+  .ad-overlay { position: absolute; left: 12px; top: 12px; }
+  .chat-shell { width: 340px; height: 100vh; }
+  .stray { position: fixed; left: 300px; bottom: 10px; width: 200px; height: 112px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <nav id="side-nav"></nav>
+  <main>
+    <div class="persistent-player">
+      <div data-a-target="video-player" class="video-player">
+        <video id="main" autoplay playsinline></video>
+        <div class="ad-overlay" id="overlay"></div>
+      </div>
+    </div>
+  </main>
+  <aside class="chat-shell"><div data-a-target="chat-scroller"></div></aside>
+</div>
+<script>
+  // A playing <video> fed by an animated canvas: no media files, real playback events.
+  function playingVideo(video, color) {
+    const c = document.createElement("canvas");
+    c.width = 320; c.height = 180;
+    const g = c.getContext("2d");
+    let n = 0;
+    setInterval(() => { g.fillStyle = color; g.fillRect(0, 0, 320, 180); g.fillStyle = "#fff"; g.fillText(String(n++), 10, 20); }, 33);
+    video.srcObject = c.captureStream(30);
+    video.play();
+    return video;
+  }
+
+  const main = playingVideo(document.getElementById("main"), "#2050a0");
+  main.muted = false;
+  main.volume = 0.5;
+
+  // Controls used by the tests (they run in the page, the extension doesn't see them).
+  window.mock = {
+    startAd({ preview = true, label = true } = {}) {
+      if (label) {
+        document.getElementById("overlay").innerHTML =
+          '<span data-a-target="video-ad-label">Ad</span> <span data-a-target="video-ad-countdown">0:15</span>';
+      }
+      if (preview) this.showPreview();
+    },
+    showPreview() {
+      if (document.querySelector(".picture-by-picture-player")) return;
+      const box = document.createElement("div");
+      box.className = "picture-by-picture-player";
+      const v = document.createElement("video");
+      v.autoplay = true; v.muted = true;
+      box.appendChild(v);
+      document.querySelector('[data-a-target="video-player"]').appendChild(box);
+      playingVideo(v, "#20a050");
+    },
+    endAd() {
+      document.getElementById("overlay").innerHTML = "";
+      const box = document.querySelector(".picture-by-picture-player");
+      if (box) { box.querySelector("video").pause(); box.remove(); }
+    },
+    // A small video playing outside the player with no ad (e.g. a hover preview elsewhere).
+    addStrayVideo() {
+      const v = document.createElement("video");
+      v.className = "stray"; v.autoplay = true; v.muted = true;
+      document.body.appendChild(v);
+      playingVideo(v, "#a02050");
+    },
+    main: () => ({ muted: main.muted, volume: main.volume }),
+  };
+</script>
+</body>
+</html>
