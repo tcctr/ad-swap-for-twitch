@@ -183,6 +183,8 @@ api.webRequest.onBeforeRequest.addListener((details) => {
       for (const v of parseMaster(text)) {
         variants.set(noQuery(v.url), { channel: master.toLowerCase(), resolution: v.resolution, height: v.height, playerType });
       }
+      // Twitch only starts the corner preview for an ad break: tell the page it's coming.
+      if (playerType === "picture-by-picture") send(details, { channel: master.toLowerCase() }, { key: "", preview: true });
       return;
     }
     const key = noQuery(details.url);
@@ -191,7 +193,12 @@ api.webRequest.onBeforeRequest.addListener((details) => {
     // For Debug logging: the end of any playlist that mentions an ad, to see how Twitch marks it.
     const tail = debug && text.includes("stitched") ? text.trim().split("\n").slice(-12).join("\n") : "";
     // The corner preview is Twitch's own ad-free copy: never hold it up or report on it.
-    if (variant && variant.playerType === "picture-by-picture") return passThrough();
+    // Its refreshes (every couple of seconds while it plays) keep the page's preview signal fresh.
+    if (variant && variant.playerType === "picture-by-picture") {
+      passThrough();
+      send(details, variant, { key, preview: true });
+      return;
+    }
     if (settings.enabled && settings.skipAds && variant && hasAd(text)) {
       let clean = null;
       // The player waits for this answer, so give up after a few seconds and let the ad through.

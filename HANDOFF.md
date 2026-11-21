@@ -103,8 +103,18 @@ opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `n
   to automated Zen) and a wrong guess would break playback; the break screen still covers that case.
 - Test-only hook: when `globalThis.TAS_TEST` is set (only the test build sets it) the page can
   feed playlist reports with a `tas-test-playlist` event.
-- Next: Phase 3, start the swap only after a `picture-by-picture` playlist was seen (the to-do e2e
-  test) and a lighter MutationObserver; Phase 4, check the page tweaks on real Twitch.
+- Phase 3: `background.js` tells the page when Twitch loads the corner preview's stream (a master
+  playlist whose token says `picture-by-picture`, and that stream's refreshes). A small playing
+  video only starts a swap on its own within 8 s of that signal, so other small videos no longer
+  start one (the open "swap without an ad" bug). The "Ad" label and the playlist hint still start
+  an ad as before. If background.js reports nothing at all (`playlistsSeen` 0, playlists not
+  readable), the old video-only rule applies. Not yet seen on a real ad: check the Debug log for
+  "Twitch is loading the corner preview's stream" before "ad started ... (preview playing)".
+- Page checks are throttled to one per 100 ms on top of the 250 ms timer, and changes inside chat
+  are ignored: busy chat went from ~51 to 4 checks a second, other busy page changes to ~14
+  (mock-page tests). The enlarged preview and break screen now correct their position for
+  transformed ancestors in the same pass instead of on the next check.
+- Next: Phase 4, check the page tweaks on real Twitch.
 
 ## Status (2026-11-11)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without

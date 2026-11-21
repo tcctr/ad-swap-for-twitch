@@ -44,11 +44,18 @@
   // last ad ended is stale (old ad segments), so it can't start a new one.
   let lastTail = "";
   let playlistsSeen = 0;      // playlist reports from background.js (0 = it sees no requests)
-  const reports = { ad: 0, skipped: 0, skipFailed: 0, unknown: 0 }; // for Debug logging and tests
-  function onPlaylist({ key, ad, tail, skipped, skipFailed, unknown }) {
+  const reports = { ad: 0, skipped: 0, skipFailed: 0, unknown: 0, preview: 0 }; // for Debug logging and tests
+  let lastPreviewAt = 0;      // when Twitch last loaded the corner preview's stream
+  function onPlaylist({ key, ad, tail, skipped, skipFailed, unknown, preview }) {
     const now = Date.now();
     playlistsSeen++;
-    for (const [k, v] of Object.entries({ ad, skipped, skipFailed, unknown })) if (v) reports[k]++;
+    for (const [k, v] of Object.entries({ ad, skipped, skipFailed, unknown, preview })) if (v) reports[k]++;
+    if (preview) {
+      if (now - lastPreviewAt > 8000) log("Twitch is loading the corner preview's stream");
+      lastPreviewAt = now;
+      queueTick();
+      return;
+    }
     // The player just moved between Twitch's copy of the stream and the ad-free one.
     if (!!skipped !== onCopy) { onCopy = !!skipped; watchForStall(); }
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
@@ -70,6 +77,13 @@
     hintUntil = now + 3000 + Math.min(ahead, 10) * 1000;
     log("ad in the stream's playlist", { ahead: ahead.toFixed(2) });
     queueTick();
+  }
+
+  // Did Twitch load the corner preview's stream lately? Only then can a small playing video on
+  // its own mean an ad (other small videos, like previews elsewhere on the page, don't). If
+  // background.js reports nothing at all (playlists not readable), go by the video alone.
+  function previewSignal() {
+    return playlistsSeen === 0 || Date.now() - lastPreviewAt < 8000;
   }
 
   function adHint() {
@@ -265,10 +279,16 @@
     }
     setStyles(pbyp, { ...FILL_PARENT, "object-fit": "contain" });
 
-    // A transformed ancestor makes "fixed" relative to it; measure and correct.
+    // A transformed ancestor makes "fixed" relative to it; measure and correct, right away
+    // (checks can be 250 ms apart, too long to show the preview in the wrong place).
     const r = box.getBoundingClientRect();
-    offset.x += t.left - r.left;
-    offset.y += t.top - r.top;
+    const dx = t.left - r.left;
+    const dy = t.top - r.top;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+      offset.x += dx;
+      offset.y += dy;
+      setStyles(box, { left: `${t.left + offset.x}px`, top: `${t.top + offset.y}px` });
+    }
   }
 
   // Shown over the player when an ad plays and Twitch gives no stream preview.
@@ -321,10 +341,15 @@
     const countdown = document.querySelector('[data-a-target="video-ad-countdown"]');
     setText(count, countdown ? countdown.textContent.trim() : "");
 
-    // A transformed ancestor makes "fixed" relative to it; measure and correct.
+    // A transformed ancestor makes "fixed" relative to it; measure and correct right away.
     const r = breakEl.getBoundingClientRect();
-    breakOffset.x += t.left - r.left;
-    breakOffset.y += t.top - r.top;
+    const dx = t.left - r.left;
+    const dy = t.top - r.top;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+      breakOffset.x += dx;
+      breakOffset.y += dy;
+      Object.assign(breakEl.style, { left: `${t.left + breakOffset.x}px`, top: `${t.top + breakOffset.y}px` });
+    }
   }
 
   function hideBreak() {
@@ -384,7 +409,9 @@
     saved = null;
   }
 
+  let ticks = 0;               // checks run so far (Debug state, for the tests)
   function tick() {
+    ticks++;
     if (!settings.enabled) {
       if (inAd) endAd();
       return;
@@ -401,7 +428,7 @@
 
     if (!inAd) {
       // The corner preview only plays during ads.
-      if ((label || hint || usable) && main) startAd(main);
+      if ((label || hint || (usable && previewSignal())) && main) startAd(main);
       else return;
     }
 
@@ -518,17 +545,22 @@
 
   setInterval(tick, 250);
   // Also react to page changes (an ad starting or ending) without waiting for the next check.
+  // At most one extra check per 100 ms however busy the page is (chat alone changes it constantly).
   let tickQueued = false;
+  let lastQueuedTick = 0;
   const queueTick = () => {
     if (tickQueued) return;
     tickQueued = true;
-    setTimeout(() => { tickQueued = false; tick(); }, 20);
+    setTimeout(() => { tickQueued = false; lastQueuedTick = Date.now(); tick(); },
+               Math.max(20, 100 - (Date.now() - lastQueuedTick)));
   };
+  const CHAT = '.chat-shell, [data-a-target="chat-scroller"], .stream-chat';
+  const inChat = (n) => { const el = n.nodeType === 1 ? n : n.parentElement; return !!(el && el.closest(CHAT)); };
   // Twitch can reveal an "Ad" label that's already in the page by changing its class or style,
   // so watch those too, skipping the changes this extension makes itself.
   const ours = (n) => styled.has(n) || (breakEl && breakEl.contains(n));
   new MutationObserver((records) => {
-    if (records.some((r) => r.type === "childList" || !ours(r.target))) queueTick();
+    if (records.some((r) => !inChat(r.target) && (r.type === "childList" || !ours(r.target)))) queueTick();
   }).observe(document, { childList: true, subtree: true, attributes: true,
                          attributeFilter: ["class", "style", "hidden"] });
   // A video starting or switching source is often the first sign of an ad.
@@ -543,7 +575,7 @@
     if (!settings.debug) { if (root.hasAttribute("data-tas-state")) root.removeAttribute("data-tas-state"); return; }
     const main = mainVideo || findVideos().main;
     root.setAttribute("data-tas-state", JSON.stringify({
-      inAd, adLabel: adShowing(), playlistAd: adHint(), playlistsSeen, reports, nudges, onCopy, connected: !!port,
+      inAd, adLabel: adShowing(), playlistAd: adHint(), playlistsSeen, reports, nudges, onCopy, ticks, previewSignal: previewSignal(), connected: !!port,
       skipping: Date.now() - lastSkipAt < 6000, breakScreen: !!(breakEl && breakEl.isConnected),
       enlarged: styled.size > 0, mainMuted: main ? main.muted : null,
       previewMuted: pbypVideo ? pbypVideo.muted : null, preview: describe(pbypVideo),

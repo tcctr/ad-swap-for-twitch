@@ -119,12 +119,21 @@ test("the backup token request names the channel and tries player types in order
   assert.deepEqual(asked.map((v) => [v.playerType, v.platform]), [["embed", "web"], ["popout", "web"], ["autoplay", "android"]]);
 });
 
-test("the corner preview's own playlist passes straight through and isn't reported", async () => {
+test("the corner preview's playlists pass straight through and tell the page a preview is coming", async () => {
   const { bg, page } = await withChannel({ routes: backupRoutes() }, { playerType: "picture-by-picture" });
+  assert.equal(page.received.length, 1, "its master playlist already counts");
+  assert.deepEqual({ preview: page.received[0].preview, channel: page.received[0].channel }, { preview: true, channel: "k4sen" });
   const r = await bg.request(source, { body: adEdge });
   assert.equal(r.text, adEdge);
-  assert.equal(page.received.length, 0);
+  assert.equal(page.received.length, 2);
+  assert.equal(page.received[1].preview, true);
+  assert.equal(page.received[1].ad, undefined, "never reported as an ad or skipped");
   assert.equal(bg.fetched.length, 0);
+});
+
+test("the main player's master playlist sends no preview signal", async () => {
+  const { page } = await withChannel({});
+  assert.equal(page.received.length, 0);
 });
 
 test("turned off: playlists pass through untouched, even with an ad", async () => {

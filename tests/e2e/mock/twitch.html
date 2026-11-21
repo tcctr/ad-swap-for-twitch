@@ -86,6 +86,19 @@
       main.play().catch(() => {});
     },
     pauses: () => pauses,
+    // Lots of page changes, like Twitch chat (inside it) or other widgets (outside it).
+    spamChat(ms) { this._spam(document.querySelector('[data-a-target="chat-scroller"]'), ms); },
+    spamPage(ms) { this._spam(document.getElementById("side-nav"), ms); },
+    _spam(into, ms) {
+      const end = Date.now() + ms;
+      const id = setInterval(() => {
+        if (Date.now() > end) return clearInterval(id);
+        const line = document.createElement("div");
+        line.textContent = "message " + Math.random();
+        into.appendChild(line);
+        if (into.children.length > 50) into.firstChild.remove();
+      }, 5);
+    },
     // A playlist report, as background.js would send (only test builds listen).
     feed(json) {
       document.dispatchEvent(new CustomEvent("tas-test-playlist", { detail: json }));
