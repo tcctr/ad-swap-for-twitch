@@ -77,8 +77,8 @@ opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `n
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
 
-## 2.3.5 (prepared 2026-11-21, not uploaded yet)
-Zip `ad-swap-for-twitch-2.3.5.zip` and AMO metadata `../amo-metadata-2.3.5.json` are ready; lint clean,
+## 2.3.5 (uploaded listed with `web-ext sign` on 2026-11-21, approved and signed straight away)
+Signed xpi in `web-ext-artifacts/`, AMO metadata in `../amo-metadata-2.3.5.json`. Lint clean,
 `npm test` and `npm run test:live` pass. No new permissions. The ad swap itself (mute, enlarged
 preview) still hasn't been seen on a real ad break: Twitch serves no ads to automated Zen.
 Changes since 2.3.4:
