@@ -114,7 +114,19 @@ opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `n
   are ignored: busy chat went from ~51 to 4 checks a second, other busy page changes to ~14
   (mock-page tests). The enlarged preview and break screen now correct their position for
   transformed ancestors in the same pass instead of on the next check.
-- Next: Phase 4, check the page tweaks on real Twitch.
+- Phase 4 (page tweaks, real twitch.tv logged out, `tests/live/tweaks.test.mjs`): the whole
+  sidebar, Live Channels, Viewers Also Watch, Show More, the arrow (expanded and collapsed sidebar),
+  Browse and the top-bar icons all work; everything off leaves the page alone. Two bugs found and
+  fixed: (1) logged out, "Open Following instead of the home page" redirected anyway, because
+  logged-out pages also have `user-menu-toggle`; login is now read from Twitch's login cookies only
+  (`login`, `auth-token`, `twilight-user`; unverified logged in, as no test login is used);
+  (2) "Top-bar icons" hid the Search button (the only way into search on narrow windows) and
+  Browse; both are kept now. Twitch markup seen 2026-11-21: sidebar sections are
+  `[role="group"]` with aria-labels "Live Channels" / "<channel> Viewers Also Watch" (chat
+  messages are `[role="group"]` too), cards `recommended-channel` / `similarity-channel`; the
+  sidebar collapses below ~1500 px window width. "Viewers Also Watch" outside the sidebar wasn't
+  on any page checked (channel, home, directory), so `hideAlsoWatch` stays untested.
+- Still untested (need a login): Followed Channels, the Following page options and redirects.
 
 ## Status (2026-11-11)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without

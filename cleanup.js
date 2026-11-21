@@ -171,13 +171,14 @@
   }
 
   // Top bar: hide every icon button except notifications, the profile menu,
-  // the logo and search. Matched loosely because Twitch's markup changes.
+  // the logo, search and Browse. Matched loosely because Twitch's markup changes.
   const TOP_NAV = 'nav[data-a-target="top-nav-container"], nav.top-nav, #root nav';
   const KEEP = [
     '[data-a-target*="notification" i]', '[aria-label*="notification" i]',
     '[data-a-target="user-menu-toggle"]', '[aria-label*="user menu" i]', '[aria-label*="profile" i]',
     LOGO, `a[href="${FOLLOWING}"]`, 'a[data-a-target="following-link"]',
-    '[role="search"]', 'form', 'input',
+    '[role="search"]', 'form', 'input', '[aria-label*="search" i]', '[data-a-target*="search" i]',
+    'a[data-a-target="browse-link"]', `a[href="/directory"]`, // Browse has its own option
   ].join(", ");
   const POPUP = '[role="dialog"], [role="menu"], [role="listbox"], [class*="balloon" i], [class*="dropdown" i]';
 
@@ -227,10 +228,10 @@
     root.classList.toggle("tas-hide-fol-tabs", !!settings.hideFollowingTabs);
   }
 
-  // The Following page only works when logged in, so the redirects only apply then.
+  // The Following page only works when logged in, so the redirects only apply then. Only Twitch's
+  // login cookies count: logged out, the page still has a user menu button (seen 2026-11-21).
   function loggedIn() {
-    if (/(?:^|;\s*)(?:login|auth-token)=/.test(document.cookie)) return true;
-    return !!document.querySelector('[data-a-target="user-menu-toggle"]');
+    return /(?:^|;\s*)(?:login|auth-token|twilight-user)=/.test(document.cookie);
   }
 
   // Go to Following without a full reload when Twitch's own link is on the page.
@@ -278,6 +279,14 @@
     for (const [k, { newValue }] of Object.entries(changes)) if (k in settings) settings[k] = newValue;
     apply();
   });
+
+  // Test builds only (tests/e2e/zen.mjs sets TAS_TEST): the page can switch options directly.
+  if (globalThis.TAS_TEST) {
+    document.addEventListener("tas-test-settings", (e) => {
+      Object.assign(settings, JSON.parse(e.detail));
+      apply();
+    });
+  }
 
   apply();
   setInterval(() => {
