@@ -88,11 +88,23 @@ opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `n
 - Debug logging also writes `<html data-tas-state>` (for the tests) and counts playlist reports.
 - Ad hunt (2026-11-21, logged out): pre-rolls on 4 of 8 top channels for the `site` player type;
   `embed`, `popout`, `autoplay` (platform android) and `picture-by-picture` were all ad-free.
-- Next (from the 2026-11-21 review): remember "no ad-free copy" instead of retrying on every playlist
-  refresh (holds the player up to 4 s each time); send the page's own GQL headers and use vaft's
-  player types; blank out ad segments when there is no clean copy; pause/play the player after
-  switching copies; start the swap only after a `picture-by-picture` playlist was seen (the to-do
-  e2e test); lighter MutationObserver.
+- "Skip ads" (Phase 2): player types are now vaft's (`embed`, `popout`, `autoplay` on platform
+  `android`); the token request reuses the headers the page sends to gql.twitch.tv (integrity,
+  device ID, login, client version and session); playlist refreshes during an ad share one search,
+  and after a search finds no ad-free copy the original goes straight through for 30 s instead of
+  being held up to 4 s on every refresh. `npm run test:live` includes `tests/live/skip.test.mjs`:
+  the real background.js got a real pre-roll and came back with Twitch's ad-free copy (`embed`,
+  2026-11-21).
+- `content.js`: for 15 s after the player moves between Twitch's copy and the ad-free one, a main
+  video that is playing but hasn't moved for 2.5 s gets a pause and play (at most twice). Checked on
+  the mock page only; whether the real player needs it is unknown.
+- Not done on purpose: replacing ad segments with a blank video when there is no ad-free copy
+  (vaft does this). The real player's reaction can't be tested automatically (Twitch serves no ads
+  to automated Zen) and a wrong guess would break playback; the break screen still covers that case.
+- Test-only hook: when `globalThis.TAS_TEST` is set (only the test build sets it) the page can
+  feed playlist reports with a `tas-test-playlist` event.
+- Next: Phase 3, start the swap only after a `picture-by-picture` playlist was seen (the to-do e2e
+  test) and a lighter MutationObserver; Phase 4, check the page tweaks on real Twitch.
 
 ## Status (2026-11-11)
 - Live on addons.mozilla.org: 2.2.0 (uploaded 2026-10-31, the sidebar commit 6c4b645, without

@@ -14,12 +14,21 @@ api.storage.onChanged.addListener((changes) => {
 });
 
 const CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"; // Twitch's public web client ID
-// Player types to ask an ad-free copy for, in order; Twitch often serves these without ads.
-const BACKUP_PLAYER_TYPES = ["embed", "picture-by-picture", "autoplay"];
-const BACKUP_TIMEOUT = 2500; // ms: past this, let the original playlist through
+// Player types to ask an ad-free copy for, in order (as vaft does; checked ad-free 2026-11-21).
+const BACKUP_PLAYER_TYPES = [["embed", "web"], ["popout", "web"], ["autoplay", "android"]];
+const BACKUP_TIMEOUT = 2500;   // ms per request: past this, try the next one
+const HOLD_LIMIT = 4000;       // ms the player's playlist may be held up while looking for a copy
+const NO_COPY_PAUSE = 30000;   // ms to stop looking after no ad-free copy was found
 
 const variants = new Map(); // media playlist (no query) -> { channel, resolution, height }
-const backups = new Map();  // "channel|resolution" -> { url, at } of an ad-free media playlist
+const backups = new Map();  // "channel|resolution" -> { url, at, playerType } of an ad-free media playlist
+const noCopyUntil = new Map(); // "channel|resolution" -> don't look again before this time
+const searches = new Map();    // "channel|resolution" -> the search in progress, shared by refreshes
+
+// Headers the page's own requests to Twitch's API carry (device ID, integrity token, login),
+// so the ad-free copy is asked for the way the Twitch player would.
+const PAGE_HEADERS = ["authorization", "client-integrity", "client-session-id", "client-version", "x-device-id"];
+const pageHeaders = {};
 
 const noQuery = (url) => url.split("?")[0];
 
@@ -63,16 +72,16 @@ async function fetchText(url, options) {
   }
 }
 
-async function backupMaster(channel, playerType) {
+async function backupMaster(channel, playerType, platform) {
   const body = {
     operationName: "PlaybackAccessToken_Template",
-    query: 'query PlaybackAccessToken_Template($login: String!, $playerType: String!) {' +
-           ' streamPlaybackAccessToken(channelName: $login, params: {platform: "web",' +
-           ' playerBackend: "mediaplayer", playerType: $playerType}) { value signature __typename } }',
-    variables: { login: channel, playerType },
+    query: "query PlaybackAccessToken_Template($login: String!, $playerType: String!, $platform: String!) {" +
+           " streamPlaybackAccessToken(channelName: $login, params: {platform: $platform," +
+           " playerBackend: \"mediaplayer\", playerType: $playerType}) { value signature __typename } }",
+    variables: { login: channel, playerType, platform },
   };
   const json = JSON.parse(await fetchText("https://gql.twitch.tv/gql", {
-    method: "POST", headers: { "Client-ID": CLIENT_ID }, body: JSON.stringify(body),
+    method: "POST", headers: { ...pageHeaders, "Client-ID": CLIENT_ID }, body: JSON.stringify(body),
   }));
   const token = json && json.data && json.data.streamPlaybackAccessToken;
   if (!token) throw new Error("no playback token");
@@ -84,9 +93,7 @@ async function backupMaster(channel, playerType) {
   return parseMaster(await fetchText(`https://usher.ttvnw.net/api/channel/hls/${channel}.m3u8?${q}`));
 }
 
-// Ad-free text for this media playlist, or null to let the original through.
-async function cleanPlaylist(variant) {
-  const key = `${variant.channel}|${variant.resolution}`;
+async function findCleanPlaylist(variant, key) {
   const cached = backups.get(key);
   if (cached && Date.now() - cached.at < 5 * 60 * 1000) {
     try {
@@ -95,9 +102,9 @@ async function cleanPlaylist(variant) {
     } catch (e) { /* token expired or stream moved: look again */ }
     backups.delete(key);
   }
-  for (const playerType of BACKUP_PLAYER_TYPES) {
+  for (const [playerType, platform] of BACKUP_PLAYER_TYPES) {
     try {
-      const list = await backupMaster(variant.channel, playerType);
+      const list = await backupMaster(variant.channel, playerType, platform);
       if (!list.length) continue;
       // Same quality if offered, else the closest height.
       const pick = list.find((v) => v.resolution === variant.resolution) ||
@@ -109,6 +116,21 @@ async function cleanPlaylist(variant) {
     } catch (e) { /* try the next player type */ }
   }
   return null;
+}
+
+// Ad-free text for this media playlist, or null to let the original through. The player asks
+// for its playlist every couple of seconds: refreshes share one search, and after a search
+// finds nothing the original goes straight through for a while instead of being held up again.
+async function cleanPlaylist(variant) {
+  const key = `${variant.channel}|${variant.resolution}`;
+  if (Date.now() < (noCopyUntil.get(key) || 0)) return null;
+  if (!searches.has(key)) {
+    searches.set(key, findCleanPlaylist(variant, key).then((clean) => {
+      if (!clean) noCopyUntil.set(key, Date.now() + NO_COPY_PAUSE);
+      return clean;
+    }, () => null).finally(() => searches.delete(key)));
+  }
+  return searches.get(key);
 }
 
 // Each Twitch page's script connects here. Zen can report both the page and the player's
@@ -173,7 +195,7 @@ api.webRequest.onBeforeRequest.addListener((details) => {
     if (settings.enabled && settings.skipAds && variant && hasAd(text)) {
       let clean = null;
       // The player waits for this answer, so give up after a few seconds and let the ad through.
-      const giveUp = new Promise((r) => setTimeout(() => r(null), 4000));
+      const giveUp = new Promise((r) => setTimeout(() => r(null), HOLD_LIMIT));
       try { clean = await Promise.race([cleanPlaylist(variant), giveUp]); } catch (e) { /* fall through */ }
       if (clean) {
         filter.write(new TextEncoder().encode(clean.text));
@@ -189,3 +211,11 @@ api.webRequest.onBeforeRequest.addListener((details) => {
   };
   filter.onerror = () => {};
 }, { urls: ["*://*.hls.ttvnw.net/*", "*://*.playlist.ttvnw.net/*", "*://usher.ttvnw.net/*"] }, ["blocking"]);
+
+api.webRequest.onBeforeSendHeaders.addListener((details) => {
+  if (isOwn(details)) return;
+  for (const h of details.requestHeaders || []) {
+    const name = h.name.toLowerCase();
+    if (PAGE_HEADERS.includes(name) && h.value) pageHeaders[name] = h.value;
+  }
+}, { urls: ["https://gql.twitch.tv/gql*"] }, ["requestHeaders"]);

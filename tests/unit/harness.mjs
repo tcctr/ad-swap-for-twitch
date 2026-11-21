@@ -14,9 +14,11 @@ function event() {
 }
 
 // routes: [{ match: RegExp | (url, options) => bool, respond: (url, options) => string | Response }]
-export async function loadBackground({ settings = {}, routes = [] } = {}) {
+// realFetch: requests no route matches go to the real network (tests/live).
+export async function loadBackground({ settings = {}, routes = [], realFetch = false } = {}) {
   const store = { ...settings };
   const onBeforeRequest = event();
+  const onBeforeSendHeaders = event();
   const onConnect = event();
   const onChanged = event();
   const filters = new Map(); // requestId -> fake StreamFilter
@@ -30,6 +32,7 @@ export async function loadBackground({ settings = {}, routes = [] } = {}) {
     runtime: { getURL: (p) => OWN + p, onConnect },
     webRequest: {
       onBeforeRequest,
+      onBeforeSendHeaders,
       filterResponseData(requestId) {
         const f = { written: [], closed: false, write(c) { this.written.push(c); }, close() { this.closed = true; } };
         filters.set(requestId, f);
@@ -42,7 +45,7 @@ export async function loadBackground({ settings = {}, routes = [] } = {}) {
   async function fakeFetch(url, options = {}) {
     fetched.push({ url, options });
     const route = routes.find((r) => (typeof r.match === "function" ? r.match(url, options) : r.match.test(url)));
-    if (!route) return new Response("not found", { status: 404 });
+    if (!route) return realFetch ? fetch(url, options) : new Response("not found", { status: 404 });
     const out = await route.respond(url, options);
     return out instanceof Response ? out : new Response(out);
   }
@@ -83,8 +86,14 @@ export async function loadBackground({ settings = {}, routes = [] } = {}) {
     return { received, port, say: (m) => port.onMessage.fire(m), disconnect: () => port.onDisconnect.fire() };
   }
 
+  // The page's own request to Twitch's API, with its headers.
+  function pageGql(headers, { originUrl = "https://www.twitch.tv/k4sen" } = {}) {
+    const requestHeaders = Object.entries(headers).map(([name, value]) => ({ name, value }));
+    onBeforeSendHeaders.fns.forEach((fn) => fn({ url: "https://gql.twitch.tv/gql", originUrl, documentUrl: originUrl, requestHeaders }));
+  }
+
   const setSetting = (k, v) => { store[k] = v; onChanged.fire({ [k]: { newValue: v } }); };
-  return { request, connectPage, fetched, setSetting, OWN };
+  return { request, connectPage, pageGql, fetched, setSetting, OWN };
 }
 
 // usher URL the Twitch player asks for, with a token naming the player type.

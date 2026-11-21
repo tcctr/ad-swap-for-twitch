@@ -116,7 +116,7 @@ test("the backup token request names the channel and tries player types in order
   await bg.request(source, { body: adEdge });
   const asked = bg.fetched.filter((f) => f.url.includes("gql")).map((f) => JSON.parse(f.options.body).variables);
   assert.deepEqual(asked.map((v) => v.login), ["k4sen", "k4sen", "k4sen"]);
-  assert.deepEqual(asked.map((v) => v.playerType), ["embed", "picture-by-picture", "autoplay"]);
+  assert.deepEqual(asked.map((v) => [v.playerType, v.platform]), [["embed", "web"], ["popout", "web"], ["autoplay", "android"]]);
 });
 
 test("the corner preview's own playlist passes straight through and isn't reported", async () => {
@@ -148,3 +148,61 @@ for (const name of ["real-preroll-start.m3u8", "real-preroll-later.m3u8"]) {
     assert.equal(on.page.received.at(-1).skipped, "embed");
   });
 }
+
+test("no ad-free copy: later refreshes go straight through instead of being held up again", async () => {
+  const { bg, page } = await withChannel({ routes: backupRoutes({ backupMedia: adEdge }) });
+  await bg.request(source, { body: adEdge });
+  const asked = bg.fetched.length;
+  const started = Date.now();
+  const r = await bg.request(source, { body: adEdge });
+  assert.equal(r.text, adEdge);
+  assert.equal(bg.fetched.length, asked, "no new search within 30 s");
+  assert.ok(Date.now() - started < 200, "not held up");
+  assert.equal(page.received.at(-1).ad, true);
+});
+
+test("refreshes arriving during a search share it", async () => {
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const routes = backupRoutes();
+  routes[0] = { ...routes[0], respond: async (u, o) => { await gate; return backupRoutes()[0].respond(u, o); } };
+  const { bg } = await withChannel({ routes });
+  const first = bg.request(source, { body: adEdge });
+  const second = bg.request(source, { body: adEdge });
+  await new Promise((r) => setTimeout(r, 20));
+  release();
+  const [a, b] = await Promise.all([first, second]);
+  assert.equal(a.text, clean);
+  assert.equal(b.text, clean);
+  assert.equal(bg.fetched.filter((f) => f.url.includes("gql")).length, 1);
+});
+
+test("a slow search lets the original through after 4 s, and its result serves the next refresh", async () => {
+  // Each request gives up after 2.5 s, so the search is slow over two requests: usher, then media.
+  const routes = backupRoutes();
+  routes[2] = { ...routes[2], respond: async () => { await new Promise((r) => setTimeout(r, 2000)); return clean; } };
+  routes[1] = { ...routes[1], respond: async () => { await new Promise((r) => setTimeout(r, 2200)); return backupMaster; } };
+  const { bg } = await withChannel({ routes });
+  const started = Date.now();
+  const r = await bg.request(source, { body: adEdge });
+  const took = Date.now() - started;
+  assert.equal(r.text, adEdge, "original let through");
+  assert.ok(took >= 3900 && took < 4500, `held ${took} ms`);
+  await new Promise((r) => setTimeout(r, 600)); // search finishes
+  const next = await bg.request(source, { body: adEdge });
+  assert.equal(next.text, clean);
+});
+
+test("the page's own Twitch API headers are reused for the ad-free copy", async () => {
+  const { bg } = await withChannel({ routes: backupRoutes() });
+  bg.pageGql({ "Client-Integrity": "integrity-1", "X-Device-Id": "device-1", Authorization: "OAuth abc",
+               "Client-Version": "v1", "Client-Session-Id": "sess", Cookie: "must-not-copy" });
+  bg.pageGql({ "X-Device-Id": "from-extension" }, { originUrl: bg.OWN + "_generated_background_page.html" });
+  await bg.request(source, { body: adEdge });
+  // (JSON round trip: the object comes from the script's own realm)
+  const headers = JSON.parse(JSON.stringify(bg.fetched.find((f) => f.url.includes("gql")).options.headers));
+  assert.deepEqual(headers, {
+    "client-integrity": "integrity-1", "x-device-id": "device-1", authorization: "OAuth abc",
+    "client-version": "v1", "client-session-id": "sess", "Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko",
+  });
+});

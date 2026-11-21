@@ -7,7 +7,7 @@
 //    what it did when an ad came (state + screenshot in tests/live/out/).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { sanitize } from "../tools/sanitize.mjs";
-import { topChannels, playbackToken, masterPlaylist } from "./twitch.mjs";
+import { topChannels, playbackToken, masterPlaylist, passContentGate } from "./twitch.mjs";
 
 const args = process.argv.slice(2);
 const count = Number(args.find((a) => /^\d+$/.test(a)) || 8);
@@ -62,6 +62,7 @@ async function viaZen(channels) {
       let sawAd = false;
       const log = [];
       for (let i = 0; i < 80; i++) { // ~40 s
+        await passContentGate(driver);
         const s = await state(driver);
         if (s && (s.inAd || s.adLabel || s.playlistAd || s.skipping || Object.values(s.reports).some(Boolean))) {
           log.push({ t: i / 2, ...s });

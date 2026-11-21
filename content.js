@@ -49,6 +49,8 @@
     const now = Date.now();
     playlistsSeen++;
     for (const [k, v] of Object.entries({ ad, skipped, skipFailed, unknown })) if (v) reports[k]++;
+    // The player just moved between Twitch's copy of the stream and the ad-free one.
+    if (!!skipped !== onCopy) { onCopy = !!skipped; watchForStall(); }
     if (tail && tail !== lastTail) log("playlist with an ad marker, live edge is ad:", ad, "\n" + tail);
     lastTail = tail || lastTail;
     if (skipped) {
@@ -457,18 +459,19 @@
 
   // Playlist reports from background.js. When the browser can't say which tab a playlist
   // belongs to (Zen), every Twitch page gets it: skip reports about another channel.
+  function fromBackground(msg) {
+    if (!msg || msg.type !== "playlist" || !settings.enabled) return;
+    const here = pageChannel();
+    if (msg.channel && here && msg.channel !== here) return;
+    onPlaylist(msg);
+  }
   let port = null;
   let portUrl = "";
   function connect() {
     try { port = api.runtime.connect({ name: "tas-page" }); } catch (e) { port = null; return; } // add-on gone
     portUrl = location.href;
     port.postMessage({ type: "where", url: portUrl });
-    port.onMessage.addListener((msg) => {
-      if (!msg || msg.type !== "playlist" || !settings.enabled) return;
-      const here = pageChannel();
-      if (msg.channel && here && msg.channel !== here) return;
-      onPlaylist(msg);
-    });
+    port.onMessage.addListener(fromBackground);
     port.onDisconnect.addListener(() => { port = null; setTimeout(connect, 1000); });
   }
   connect();
@@ -479,6 +482,39 @@
       port.postMessage({ type: "where", url: portUrl });
     }
   }, 500);
+
+  // Switching between Twitch's copy of the stream and the ad-free one can leave the player stuck
+  // on one frame. For 15 s after each switch, a main video that should be playing but hasn't
+  // moved for 2.5 s gets a pause and play (at most twice), as vaft does.
+  let onCopy = false;          // background.js is serving the ad-free copy
+  let stallWatchUntil = 0;
+  let stall = { el: null, time: -1, since: 0 };
+  let nudges = 0;
+  function watchForStall() {
+    stallWatchUntil = Date.now() + 15000;
+    stall = { el: null, time: -1, since: 0 };
+    nudges = 0;
+  }
+  function checkStall() {
+    const now = Date.now();
+    if (now > stallWatchUntil || nudges >= 2) return;
+    const v = mainVideo || findVideos().main;
+    if (!v || v.paused || v.ended) { stall.since = 0; return; }
+    if (stall.el !== v || v.currentTime !== stall.time) { stall = { el: v, time: v.currentTime, since: now }; return; }
+    if (now - stall.since < 2500) return;
+    nudges++;
+    stall.since = now;
+    log("player stuck after switching stream copies: pause and play", describe(v));
+    v.pause();
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+  setInterval(checkStall, 500);
+
+  // Test builds only (tests/e2e/zen.mjs sets TAS_TEST): the mock page can feed playlist reports.
+  if (globalThis.TAS_TEST) {
+    document.addEventListener("tas-test-playlist", (e) => fromBackground(JSON.parse(e.detail)));
+  }
 
   setInterval(tick, 250);
   // Also react to page changes (an ad starting or ending) without waiting for the next check.
@@ -507,7 +543,7 @@
     if (!settings.debug) { if (root.hasAttribute("data-tas-state")) root.removeAttribute("data-tas-state"); return; }
     const main = mainVideo || findVideos().main;
     root.setAttribute("data-tas-state", JSON.stringify({
-      inAd, adLabel: adShowing(), playlistAd: adHint(), playlistsSeen, reports, connected: !!port,
+      inAd, adLabel: adShowing(), playlistAd: adHint(), playlistsSeen, reports, nudges, onCopy, connected: !!port,
       skipping: Date.now() - lastSkipAt < 6000, breakScreen: !!(breakEl && breakEl.isConnected),
       enlarged: styled.size > 0, mainMuted: main ? main.muted : null,
       previewMuted: pbypVideo ? pbypVideo.muted : null, preview: describe(pbypVideo),

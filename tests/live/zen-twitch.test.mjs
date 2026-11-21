@@ -3,7 +3,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { buildTestExtension, startZen, state, waitFor } from "../e2e/zen.mjs";
-import { topChannels } from "./twitch.mjs";
+import { topChannels, passContentGate } from "./twitch.mjs";
 
 let driver, channel;
 
@@ -19,8 +19,10 @@ test("on a live channel the stream plays and background.js reports its playlists
   const s = await waitFor(async () => { const s = await state(driver); return s && s.playlistsSeen > 0 && s; },
                           { timeout: 30000, what: "playlistsSeen > 0" });
   assert.equal(s.connected, true);
-  await waitFor(() => driver.executeScript(
-    "return [...document.querySelectorAll('video')].some(v => !v.paused && v.currentTime > 1)"),
+  await waitFor(async () => {
+    await passContentGate(driver);
+    return driver.executeScript("return [...document.querySelectorAll('video')].some(v => !v.paused && v.currentTime > 1)");
+  },
     { timeout: 30000, what: "a video playing" });
   t.diagnostic(`state: ${JSON.stringify({ inAd: s.inAd, playlistsSeen: s.playlistsSeen, adLabel: s.adLabel })}`);
 });

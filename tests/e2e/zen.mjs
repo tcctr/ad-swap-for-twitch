@@ -35,7 +35,7 @@ export function buildTestExtension({ settings = {}, localhost = false } = {}) {
   const defaults = readFileSync(join(dir, "defaults.js"), "utf8");
   const overrides = { debug: true, ...settings };
   writeFileSync(join(dir, "defaults.js"),
-    defaults + `\nObject.assign(globalThis.TAS_DEFAULTS, ${JSON.stringify(overrides)});\n`);
+    defaults + `\nObject.assign(globalThis.TAS_DEFAULTS, ${JSON.stringify(overrides)});\nglobalThis.TAS_TEST = true;\n`);
   return dir;
 }
 

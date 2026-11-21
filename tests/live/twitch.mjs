@@ -36,3 +36,10 @@ export async function masterPlaylist(channel, token) {
   if (!r.ok) throw new Error(`usher ${r.status}`);
   return r.text();
 }
+
+// Some channels show a content warning ("Start Watching") before the stream plays: click through.
+export function passContentGate(driver) {
+  return driver.executeScript(
+    "const b = document.querySelector('[data-a-target=\"content-classification-gate-overlay-start-watching-button\"]');" +
+    " if (b) b.click(); return !!b");
+}

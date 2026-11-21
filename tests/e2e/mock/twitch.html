@@ -80,8 +80,25 @@
       document.body.appendChild(v);
       playingVideo(v, "#a02050");
     },
+    // The main video stops moving but stays "playing" (a stuck player).
+    stallMain() {
+      main.srcObject = new MediaStream();
+      main.play().catch(() => {});
+    },
+    pauses: () => pauses,
+    // A playlist report, as background.js would send (only test builds listen).
+    feed(json) {
+      document.dispatchEvent(new CustomEvent("tas-test-playlist", { detail: json }));
+    },
+    feedEvery(json, times) {
+      this.feed(json);
+      let n = 1;
+      const id = setInterval(() => { if (n++ >= times) clearInterval(id); else this.feed(json); }, 2000);
+    },
     main: () => ({ muted: main.muted, volume: main.volume }),
   };
+  let pauses = 0;
+  main.addEventListener("pause", () => pauses++);
 </script>
 </body>
 </html>
