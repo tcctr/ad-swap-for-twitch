@@ -39,6 +39,16 @@ Ad Swap collects no data. To skip an ad it only talks to Twitch itself (gql.twit
 
 This extension is not affiliated with or endorsed by Twitch.
 
+## Version notes for 2.3.5
+Fixes ad skipping and early ad detection in Zen, which never ran there: Zen doesn't tell add-ons which tab a request comes from, and Ad Swap ignored every such request. Ads are now skipped when Twitch has an ad-free copy of the stream, and otherwise muted and covered from the first frame.
+
+Also:
+- Skipping asks Twitch the way its own player does, and no longer holds up the stream on every refresh when there is no ad-free copy.
+- The swap no longer starts when no ad is playing (another small video on the page could set it off).
+- Uses much less CPU on busy pages: chat no longer makes it re-check the page.
+- "Open Following instead of the home page" no longer redirects when you are logged out.
+- "Top-bar icons" now keeps the Search button and Browse.
+
 ## Version notes for 2.3.4
 Fixes the break screen covering ads that have a stream preview: the preview is shown again. Also, when an ad has been skipped, Twitch's "Ad" label no longer brings up the break screen over the stream.
 

@@ -42,7 +42,7 @@ No build step: these files are the source and get zipped as-is for upload.
    `{"version": {"release_notes": {"en-US": "..."}}}`
 5. Upload with the AMO API. The keys are in `../amo-credentials.sh` (the folder above this repo,
    never committed):
-   `source ../amo-credentials.sh && npx web-ext sign --channel=listed --amo-metadata <json> --ignore-files HANDOFF.md LISTING.md README.md LICENSE CLAUDE.md '*.zip' screenshot-menu.png tests package.json package-lock.json node_modules`
+   `source ../amo-credentials.sh && npx web-ext sign --channel=listed --amo-metadata <json> --ignore-files HANDOFF.md LISTING.md README.md LICENSE CLAUDE.md '*.zip' screenshot-menu.png tests package.json package-lock.json node_modules web-ext-artifacts`
    The signed copy lands in `web-ext-artifacts/`. Check AMO for existing versions first: a version
    number can't be reused. Fallback: Upload New Version on the Developer Hub, answer "No" to
    source code.
@@ -77,7 +77,11 @@ opens and no sound plays (a Zen icon may show in the Dock while it runs). Run `n
 - The Followed Channels marker (`followed-channel`) was never seen: all checks so far were
   logged out. Check it logged in, with Debug logging on (it logs each section it tags).
 
-## Unreleased (2026-11-21, after 2.3.4)
+## 2.3.5 (prepared 2026-11-21, not uploaded yet)
+Zip `ad-swap-for-twitch-2.3.5.zip` and AMO metadata `../amo-metadata-2.3.5.json` are ready; lint clean,
+`npm test` and `npm run test:live` pass. No new permissions. The ad swap itself (mute, enlarged
+preview) still hasn't been seen on a real ad break: Twitch serves no ads to automated Zen.
+Changes since 2.3.4:
 - Fix: in Zen every webRequest has `tabId -1` and `tabs.query` lists no tabs (seen in automated
   Zen 1.24.1b, headless and visible). `background.js` skipped all `tabId < 0` requests as its own,
   so playlist reading and "Skip ads" never ran there (Debug showed `playlistsSeen: 0`). Now its own
